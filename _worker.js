@@ -36,6 +36,7 @@ const SYSTEM_DEFAULTS = {
 let sysConfig = { ...SYSTEM_DEFAULTS };
 let isolateStartTime = Date.now();
 let activeConnections = 0;
+let uuidUsage = new Map();
 let activeDeviceId = "";
 
 export default {
@@ -93,6 +94,9 @@ export default {
                     }
                     const clientHost = request.headers.get("Host") || url.hostname;
                     let targetSub = url.searchParams.get("sub");
+                    if (!targetSub && sysConfig.extraProfiles && sysConfig.extraProfiles.trim().length > 0) {
+                        return new Response("Error: Multi-user is active. You must use a specific profile sub-link (?sub=name).", { status: 403 });
+                    }
                     if (ua.includes(getGamma()) || ua.includes("meta") || ua.includes("stash")) {
                         return new Response(buildYamlProfile(clientHost, targetSub));
                     } else {
@@ -273,9 +277,15 @@ async function handleAuth(request, hostName, ctx, env) {
                 colo: request.cf?.colo || "Unknown",
                 loc: (request.cf?.city || "Unknown") + ", " + (request.cf?.country || "Unknown")
             };
+            let usageData = {};
+            for(let [k,v] of uuidUsage.entries()) usageData[k] = v;
             return new Response(JSON.stringify({
-                success: true, config: sysConfig, deviceId: activeDeviceId, network: netInfo,
-                links: { direct: buildSingleUri(hostName), sync: `https://${hostName}/${sysConfig.apiRoute}` }
+                success: true, config: sysConfig, deviceId: activeDeviceId, network: netInfo, usage: usageData,
+                profiles: getAllProfiles().map(p => ({
+                    name: p.name,
+                    id: p.id,
+                    sync: `https://${hostName}/${sysConfig.apiRoute}${p.name === 'Default' ? '' : '?sub=' + encodeURIComponent(p.name)}`
+                }))
             }), { status: 200 });
         }
         ctx?.waitUntil(logActivity(env, "Auth Failed", `Failed login attempt from ${ip}`));
@@ -457,6 +467,11 @@ async function startDataPipe(webSocket) {
             let clientHash = Array.from(view.slice(1, 17)).map(b => b.toString(16).padStart(2, '0')).join('');
             let validUUIDs = getAllProfiles().map(p => p.id.replace(/-/g, '').toLowerCase());
             if (!validUUIDs.includes(clientHash)) return false; // DROP IF INVALID PROFILE
+            
+            let uTrack = uuidUsage.get(clientHash) || { connects: 0, last: 0 };
+            uTrack.connects++;
+            uTrack.last = Date.now();
+            uuidUsage.set(clientHash, uTrack);
             
             const optLen = view[17];
             const pPos = 18 + optLen + 1;
@@ -720,40 +735,17 @@ function getDashboardUI(hasDB) {
                       
                       <!-- INFO VIEW -->
                       <div id="view-info" class="space-y-6 block">
-                          <div class="bg-white dark:bg-darkcard rounded-3xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-darkborder relative overflow-hidden">
-                              <div class="absolute top-0 end-0 w-32 h-32 bg-primary/10 rounded-bl-[100px] -z-10"></div>
-                              
-                              <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center" data-i18n="qr_title">
-                                  <svg class="w-5 h-5 me-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                                  Direct Stream Link
-                              </h3>
-                              
-                              <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-                                  <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 shrink-0"><img id="qr-code" src="" class="w-36 h-36 md:w-44 md:h-44 object-contain"></div>
-                                  <div class="w-full space-y-4">
-                                      <div class="relative">
-                                          <input type="text" id="link-direct" readonly class="w-full bg-slate-50 dark:bg-darkbg border border-slate-200 dark:border-darkborder px-4 py-3 rounded-xl text-sm outline-none text-slate-600 dark:text-slate-300 pe-24 font-mono truncate">
-                                          <button onclick="copyData('link-direct')" class="absolute top-1/2 -translate-y-1/2 end-1.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors" data-i18n="copy">Copy</button>
-                                      </div>
-                                      <div class="grid grid-cols-1 gap-4 mt-2">
-                                          <div>
-                                              <div class="flex items-center justify-between mb-2">
-                                                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="sync_link">Cloud Sync URL</label>
-                                                  <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-bold" data-i18n="badge_multi">Dual-Core Multiplexed</span>
-                                              </div>
-                                              <div class="relative">
-                                                  <input type="text" id="link-sync" readonly class="w-full bg-slate-50 dark:bg-darkbg border border-slate-200 dark:border-darkborder px-4 py-3 rounded-lg text-sm outline-none font-mono text-slate-600 dark:text-slate-400 truncate pe-12">
-                                                  <button onclick="copyData('link-sync')" class="absolute top-1/2 -translate-y-1/2 end-1 text-primary p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
+                          <div id="dyn-profiles-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                       </div>
-  
+
                       <!-- NETWORK/METRICS VIEW -->
                       <div id="view-network" class="hidden space-y-6">
+                            <div class="bg-white dark:bg-darkcard rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-darkborder mb-6">
+                              <h3 class="text-sm uppercase font-bold text-slate-500 tracking-wider mb-4">Live Profile Usage</h3>
+                              <div id="usage-metrics-container" class="flex flex-col">
+                                  <p class="text-xs text-slate-400 text-center py-4">No active connection data yet.</p>
+                              </div>
+                          </div>
                           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                               <div class="bg-white dark:bg-darkcard p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-darkborder relative overflow-hidden group">
                                   <svg class="w-8 h-8 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
@@ -1091,6 +1083,7 @@ function getDashboardUI(hasDB) {
               });
             updateTitle();
             if(tab === 'logs') loadLogs();
+            if(tab === 'network') doLogin(true); // refresh metrics
         }
 
         async function loadLogs() {
@@ -1300,7 +1293,48 @@ function getDashboardUI(hasDB) {
                           if(el) el.addEventListener('change', updateUI);
                       });
                       
-                      document.getElementById('link-sync').value = data.links.sync;
+                      const pCont = document.getElementById('dyn-profiles-container');
+                      pCont.innerHTML = '';
+                      data.profiles.forEach(p => {
+                          const isDef = p.name === 'Default';
+                          let html = \`<div class="bg-white dark:bg-darkcard rounded-3xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-darkborder relative overflow-hidden">
+                              <div class="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] -z-10"></div>
+                              <div class="flex items-center justify-between mb-4">
+                                  <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center">
+                                      <svg class="w-5 h-5 me-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                      \${p.name}
+                                  </h3>
+                                  \${isDef ? '<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold uppercase">Master</span>' : ''}
+                              </div>
+                              <div class="space-y-3">
+                                  <div>
+                                      <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">UUID</label>
+                                      <div class="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-darkborder px-3 py-2 rounded-lg text-xs font-mono text-slate-500">\${p.id}</div>
+                                  </div>
+                                  <div class="relative">
+                                      <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cloud Sync URL</label>
+                                      <input type="text" id="sync-\${p.id}" readonly value="\${p.sync}" class="w-full bg-slate-50 dark:bg-darkbg border border-slate-200 dark:border-darkborder px-4 py-3 rounded-xl text-sm outline-none font-mono text-slate-600 dark:text-slate-400 truncate pe-12">
+                                      <button onclick="copyData('sync-\${p.id}')" class="absolute bottom-1 end-1 text-primary p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                                  </div>
+                              </div>
+                          </div>\`;
+                          pCont.innerHTML += html;
+                      });
+                      
+                      // Inject usage metrics table
+                      const usageCont = document.getElementById('usage-metrics-container');
+                      if(usageCont && data.usage) {
+                          usageCont.innerHTML = '';
+                          data.profiles.forEach(p => {
+                              let hash = p.id.replace(/-/g, '').toLowerCase();
+                              let use = data.usage[hash];
+                              if(use) {
+                                  let timeStr = new Date(use.last).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                                  usageCont.innerHTML += \`<div class="flex items-center justify-between p-3 border-b border-slate-100 dark:border-darkborder/50 last:border-0"><div class="flex flex-col"><span class="text-sm font-bold text-slate-700 dark:text-slate-200">\${p.name}</span><span class="text-[10px] text-slate-400 font-mono">\${p.id.split('-')[0]}...</span></div><div class="flex flex-col items-end"><span class="text-xs font-bold text-emerald-500">\${use.connects} Conns</span><span class="text-[10px] text-slate-400">\${timeStr}</span></div></div>\`;
+                              }
+                          });
+                          if(usageCont.innerHTML === '') usageCont.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No active connection data yet.</p>';
+                      }
                       
                       updateUI();
                   } else { 
