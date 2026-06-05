@@ -1,32 +1,37 @@
-# Edge Tunnel
+# Project Nahan (پروژه نهان)
 
-Edge Tunnel 是一个基于 Cloudflare Pages 的免费代理解决方案, 配置精简, 适合新手快速上手
+**Nahan** (Persian for *Hidden/Concealed*) is a secure, lightweight, and customizable network gateway designed to run entirely on Cloudflare Workers. It acts as an obfuscated reverse proxy (VLESS / Trojan over WebSocket) configured via an intuitive, embedded web dashboard.
 
-## 项目特点
+By disguising its web interface as an "IoT Telemetry Hub," unauthorized visitors are seamlessly redirected to maintenance hosts (like ubuntu.com), ensuring your gateway remains completely hidden and protected from active probing.
 
-- **免费**：利用 Cloudflare Pages 免费托管
-- **易用**：通过环境变量灵活配置
-- **兼容性强**：支持 v2ray 和 clash 客户端
+## 🚀 Features
 
-> **欢迎各位大佬指正代码中存在的问题！**
+*   **Full Embedded Dashboard:** Change configurations, view QR codes, and copy secure links without touching code.
+*   **Dual Protocol Support:** Run in `Alpha mode` (VLESS) or `Beta mode` (Trojan).
+*   **Dynamic KV Storage:** Settings are saved to a Cloudflare KV namespace, surviving worker updates.
+*   **Stealth Mode:** Unauthorized network requests or standard browser visits are seamlessly proxied to dummy websites (`ubuntu.com`, `docker.com`).
+*   **Multi-Language UI:** Built-in English and Persian (Farsi) support with Dark/Light mode.
 
-如果本项目对您有帮助, 请点 Star 支持 !
+## 🛠️ Deployment Instructions
 
-## 使用方法
+### 1. Create a KV Namespace
+1. Go to your Cloudflare Dashboard.
+2. Navigate to **Workers & Pages** -> **KV**.
+3. Create a new namespace and name it `IOT_DB`.
 
-1. **Fork 本项目**
-2. **创建 Cloudflare Pages**
-- **导入您 Fork 的仓库**
-- **添加环境变量**
-- **保存并部署**
-4. **导入订阅(域名/订阅路径)并开始使用**
+### 2. Deploy the Worker
+1. Go to **Workers & Pages** -> **Overview** -> **Create Application** -> **Create Worker**.
+2. Name your worker (e.g., `nahan-gateway`) and deploy it.
+3. Click **Edit code** and paste the provided `index.js` (or `_worker.js`) script.
+4. Click **Deploy**.
 
-## 环境变量说明
+### 3. Bind the KV Namespace
+1. In your Worker's settings page, go to **Settings** -> **Variables**.
+2. Under **KV Namespace Bindings**, add a new binding:
+   * **Variable name:** `IOT_DB`
+   * **KV namespace:** Select the `IOT_DB` namespace you created in step 1.
+3. Save and deploy again.
 
-| 变量名 | 示例值 | 说明 |
-|-|-|-|
-| SUB_PATH | `订阅路径` | 域名/`订阅路径` |
-| PROXY_IP | `proxyip.cmliussss.net` | 反代地址和端口, 端口不填默认 `443` |
-| FAKE_WEB | `baidu.com` | 伪装网页 |
+## ⚙️ Configuration
 
-## 不再提供优选IP
+Once deployed, access the dashboard to configure your node. See the [HELP.md](HELP.md) guide for a full walkthrough.
