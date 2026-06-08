@@ -5,7 +5,7 @@ import { connect } from "cloudflare:sockets";
  * Handles real-time binary streams from remote sensor nodes.
  */
 
-const CURRENT_VERSION = "2.3.2";
+const CURRENT_VERSION = "2.3.4";
 
 const getAlpha = () => String.fromCharCode(118, 108, 101, 115, 115);
 const getBeta = () => String.fromCharCode(116, 114, 111, 106, 97, 110);
@@ -36,6 +36,9 @@ const SYSTEM_DEFAULTS = {
     isPaused: false,
     silentAlerts: false,
     githubRepo: "itsyebekhe/nahan",
+    nameStrategy: "default",
+    namePrefix: "Core",
+    tgBotLang: "fa",
     users: [],
 };
 
@@ -135,9 +138,7 @@ function trackUsage(uuid, bytes, env, ctx) {
                     let sysU = sysUsageCache.users[uId];
                     if (sysU) {
                         if (u.limitTotalReq && sysU.reqs >= u.limitTotalReq) return false;
-                        if (u.limitDailyReq && sysU.lastDay === new Date().toISOString().split('T')[0] && sysU.dReqs >= u.limitDailyReq) return false;
                     }
-                    if (u.expiryMs && now > u.expiryMs) return false;
                     return true;
                 });
                 if (sysConfig.users.length !== initialLen) {
@@ -200,7 +201,7 @@ export default {
                 }
                 if (reqPath === routes.tg) {
                     if (request.method !== "POST") return new Response("405", { status: 405 });
-                    return await handleTelegramWebhook(request, env, url.hostname);
+                    return await handleTelegramWebhook(request, env, url.hostname, ctx);
                 }
                 if (reqPath === routes.data) {
                     const ua = (request.headers.get("User-Agent") || "").toLowerCase();
@@ -248,7 +249,7 @@ async function serveMaintenancePage(request, url) {
         cleanHeaders.set("Host", targetUrl.hostname);
         cleanHeaders.delete("cf-connecting-ip");
         cleanHeaders.delete("x-forwarded-for");
-        const fetchInit = { method: request.method, headers: cleanHeaders, redirect: "manual" };
+        const fetchInit = { method: request.method, headers: cleanHeaders, redirect: "follow" };
         if (request.method !== "GET" && request.method !== "HEAD") fetchInit.body = request.body;
         return await fetch(new Request(targetUrl.toString(), fetchInit));
     } catch (e) { return new Response("Not Found", { status: 404 }); }
@@ -459,156 +460,556 @@ async function handleConfigSync(request, env, ctx) {
     } catch (e) { return new Response(JSON.stringify({ success: false }), { status: 400 }); }
 }
 
-async function handleTelegramWebhook(request, env, hostName) {
+const botI18n = {
+    en: {
+        welcome: "🤖 **Welcome to Nahan Gateway Bot**\nSelect your option below to manage your system:",
+        status: "📊 System Status",
+        users: "👥 Subscribers",
+        metrics: "📡 Gateway Health",
+        panic: "🚨 Panic Mode",
+        dash: "🔑 Dashboard Control",
+        lang: "🌐 Change Language",
+        active: "🟢 Active",
+        paused: "🔴 Paused",
+        uptime: "⏱ Uptime",
+        streams: "📡 Active Streams",
+        no_users: "No subscribers found.",
+        sub_info: "👤 Subscriber Details:",
+        name: "Name",
+        total: "Total Reqs",
+        daily: "Daily Reqs",
+        expiry: "Expiry",
+        days: "Days remaining",
+        created: "Created At",
+        unlimited: "Unlimited",
+        btn_back: "◀️ Back",
+        btn_next: "▶️ Next",
+        btn_del: "🗑️ Delete",
+        btn_pause: "⏸️ Pause",
+        btn_resume: "▶️ Resume",
+        btn_edit_name: "✏️ Change Name",
+        btn_edit_limits: "⚙️ Limits",
+        btn_add: "+ Add Subscriber",
+        btn_confirm: "✅ Confirm",
+        btn_cancel: "❌ Cancel",
+        msg_enter_name: "Please send a name for the subscriber:",
+        msg_added: "Sub added successfully! 🎉",
+        msg_deleted: "Sub deleted successfully! 🗑️",
+        msg_panic: "🚨 PANIC MODE ACTIVATED 🚨\nRoute randomized & System Paused.",
+        msg_invalid: "Invalid input. Please try again.",
+        msg_enter_limits: "Enter limits format:\n`[totalReqs] [dailyReqs] [days_limit]`\n(Use 0 for unlimited)\n\nExample:\n`10000 500 30`",
+        msg_confirm_del: "⚠️ Are you sure you want to delete this subscriber?",
+        msg_confirm_panic: "⚠️ Are you absolutely sure you want to trigger PANIC mode? This will randomize API routes and pause all connections!",
+        status_updated: "Status updated! 🔁"
+    },
+    fa: {
+        welcome: "🤖 **به ربات ترانزیت نهان خوش آمدید**\nجهت مدیریت سیستم نظارتی خود یکی از گزینه‌های زیر را انتخاب نمایید:",
+        status: "📊 وضعیت سیستم",
+        users: "👥 مدیریت مشترکین",
+        metrics: "📡 سلامت درگاه شبکه",
+        panic: "🚨 وضعیت اضطراری (Panic)",
+        dash: "🔑 پنل تحت وب",
+        lang: "🌐 تغییر زبان به انگلیسی",
+        active: "🟢 فعال",
+        paused: "🔴 متوقف شده",
+        uptime: "⏱ مدت زمان کارکرد",
+        streams: "📡 اتصالات فعال",
+        no_users: "هیچ مشترکی پیدا نشد.",
+        sub_info: "👤 مشخصات مشترک:",
+        name: "نام",
+        total: "درخواست کل",
+        daily: "درخواست روزانه",
+        expiry: "انقضاء",
+        days: "روزهای باقی‌مانده",
+        created: "تاریخ ایجاد",
+        unlimited: "نامحدود",
+        btn_back: "◀️ بازگشت",
+        btn_next: "▶️ بعدی",
+        btn_del: "🗑️ حذف",
+        btn_pause: "⏸️ غیرفعال‌سازی",
+        btn_resume: "▶️ فعال‌سازی",
+        btn_edit_name: "✏️ تغییر نام",
+        btn_edit_limits: "⚙️ ویرایش محدودیت‌ها",
+        btn_add: "+ افزودن مشترک جدید",
+        btn_confirm: "✅ تأیید",
+        btn_cancel: "❌ انصراف",
+        msg_enter_name: "لطفاً نام یا شناسه مشترک جدید را ارسال نمایید:",
+        msg_added: "مشترک با موفقیت افزوده شد! 🎉",
+        msg_deleted: "مشترک با موفقیت حذف گردید! 🗑️",
+        msg_panic: "🚨 وضعیت اضطراری فعال شد 🚨\nمسیر تصادفی شد و سیستم متوقف گردید.",
+        msg_invalid: "ورودی نامعتبر است. مجدداً تلاش نمایید.",
+        msg_enter_limits: "فرمت ورودی محدودیت:\n`[کل] [روزانه] [مدت_روز]`\n(از 0 برای نامحدود استفاده کنید)\n\nمثال:\n`10000 500 30`",
+        msg_confirm_del: "⚠️ آیا از حذف این مشترک اطمینان کامل دارید؟",
+        msg_confirm_panic: "⚠️ آیا از فعال‌سازی وضعیت اضطراری اطمینان دارید؟ کل اتصالات متوقف و آدرس‌ها منقضی خواهند شد!",
+        status_updated: "وضعیت بروزرسانی شد! 🔁"
+    }
+};
+
+async function handleTelegramWebhook(request, env, hostName, ctx) {
     try {
         const update = await request.json();
         const tgApi = `https://api.telegram.org/bot${sysConfig.tgToken}`;
         
+        let tgState = {};
+        try {
+            const storedState = await d1Get(env, "tg_bot_state");
+            if (storedState) tgState = JSON.parse(storedState);
+        } catch (e) { }
+
+        // Determine language code (default to Persian)
+        const langCode = sysConfig.tgBotLang || "fa";
+        const t = (key) => botI18n[langCode]?.[key] || botI18n["en"]?.[key] || key;
+
+        // Custom sendOrEdit message helper
+        const sendOrEdit = async (chatId, text, replyMarkup = null, messageId = null) => {
+            let res;
+            if (messageId) {
+                res = await fetch(`${tgApi}/editMessageText`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        message_id: messageId,
+                        text: text,
+                        parse_mode: 'HTML',
+                        reply_markup: replyMarkup
+                    })
+                });
+                if (res.ok) return res;
+            }
+            res = await fetch(`${tgApi}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: 'HTML',
+                    reply_markup: replyMarkup
+                })
+            });
+            return res;
+        };
+
+        const getMainMenu = () => {
+            const isPaused = sysConfig.isPaused || false;
+            const statusEmoji = isPaused ? "🔴" : "🟢";
+            const text = `${t("welcome")}\n\n` +
+                         `━━━━━━━━━━━━━━━━\n` +
+                         `⚡ **${t("status")}**: ${isPaused ? t("paused") : t("active")} ${statusEmoji}\n` +
+                         `👥 **${t("users")}**: ${sysConfig.users?.length || 0}\n` +
+                         `━━━━━━━━━━━━━━━━`;
+            const panelUrl = `https://${hostName}/${encodeURI(sysConfig.apiRoute)}/dash`;
+            const kb = {
+                inline_keyboard: [
+                    [
+                        { text: `🌐 ${langCode === 'fa' ? 'English 🇺🇸' : 'فارسی 🇮🇷'}`, callback_data: "sys_lang" },
+                        { text: isPaused ? "▶️ Resume" : "⏸️ Pause", callback_data: "sys_toggle_status" }
+                    ],
+                    [
+                        { text: `👥 ${t("users")}`, callback_data: "subs_list:0" },
+                        { text: `📡 ${t("metrics")}`, callback_data: "sys_metrics" }
+                    ],
+                    [
+                        { text: `🔑 ${t("dash")}`, web_app: { url: panelUrl } }
+                    ],
+                    [
+                        { text: `🚨 ${t("panic")}`, callback_data: "sys_panic_init" }
+                    ]
+                ]
+            };
+            return { text, kb };
+        };
+
+        const getSubsList = (page = 0) => {
+            const users = sysConfig.users || [];
+            const itemsPerPage = 5;
+            const totalPages = Math.ceil(users.length / itemsPerPage);
+            const start = page * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageUsers = users.slice(start, end);
+            
+            let text = `👥 **${t("users")}** (Page ${page + 1}/${Math.max(1, totalPages)})\n`;
+            text += `━━━━━━━━━━━━━━━━\n`;
+            
+            if (users.length === 0) {
+                text += `⚠️ ${t("no_users")}\n`;
+            } else {
+                pageUsers.forEach((u, idx) => {
+                    text += `${start + idx + 1}. 👤 **${u.name}**\n   <code>${u.id}</code>\n`;
+                });
+            }
+            text += `━━━━━━━━━━━━━━━━`;
+            
+            const inline_keyboard = [];
+            pageUsers.forEach((u) => {
+                inline_keyboard.push([{ text: `👤 ${u.name}`, callback_data: `sub_detail:${u.id}` }]);
+            });
+            
+            const navRow = [];
+            if (page > 0) {
+                navRow.push({ text: `⬅️ ${t("btn_back")}`, callback_data: `subs_list:${page - 1}` });
+            }
+            if (end < users.length) {
+                navRow.push({ text: `${t("btn_next")} ➡️`, callback_data: `subs_list:${page + 1}` });
+            }
+            if (navRow.length > 0) {
+                inline_keyboard.push(navRow);
+            }
+            
+            inline_keyboard.push([{ text: `➕ ${t("btn_add")}`, callback_data: "sub_add_init" }]);
+            inline_keyboard.push([{ text: "🔙 Main Menu", callback_data: "main_menu" }]);
+            
+            return { text, kb: { inline_keyboard } };
+        };
+
+        const getSubDetail = (uuid) => {
+            const users = sysConfig.users || [];
+            const u = users.find(usr => usr.id === uuid);
+            if (!u) {
+                return { text: "⚠️ User not found", kb: { inline_keyboard: [[{ text: "Back", callback_data: "subs_list:0" }]] } };
+            }
+            
+            const sysU = sysUsageCache?.users?.[u.id.replace(/-/g,'').toLowerCase()] || { reqs: 0, dReqs: 0, lastDay: '' };
+            const userReqs = sysU.reqs || 0;
+            const curDate = new Date().toISOString().split('T')[0];
+            const userDReqs = sysU.lastDay === curDate ? (sysU.dReqs || 0) : 0;
+            
+            const limitTotalTxt = u.limitTotalReq ? `${u.limitTotalReq}` : t("unlimited");
+            const limitDailyTxt = u.limitDailyReq ? `${u.limitDailyReq}` : t("unlimited");
+            
+            let expTxt = t("unlimited");
+            let isExp = false;
+            if (u.expiryMs) {
+                const date = new Date(u.expiryMs);
+                expTxt = date.toLocaleDateString();
+                if (Date.now() > u.expiryMs) {
+                    expTxt += ` (${langCode === 'fa' ? 'منقضی شده 🔴' : 'Expired 🔴'})`;
+                    isExp = true;
+                }
+            }
+            
+            const statusEmoji = u.isPaused ? "⏸️" : (isExp ? "🔴" : "🟢");
+            const statusText = u.isPaused ? t("paused") : (isExp ? (langCode==='fa'?'منقضی':'Expired') : t("active"));
+            const subSync = `https://${hostName}/${sysConfig.apiRoute}?sub=${encodeURIComponent(u.name)}`;
+            
+            let text = `👤 **${t("sub_info")}**\n`;
+            text += `━━━━━━━━━━━━━━━━\n`;
+            text += `📛 **${t("name")}**: ${u.name}\n`;
+            text += `🆔 **UUID**: <code>${u.id}</code>\n`;
+            text += `🚦 **Status**: ${statusEmoji} ${statusText}\n`;
+            text += `📊 **${t("total")}**: ${userReqs} / ${limitTotalTxt}\n`;
+            text += `⏱ **${t("daily")}**: ${userDReqs} / ${limitDailyTxt}\n`;
+            text += `📅 **${t("expiry")}**: ${expTxt}\n`;
+            text += `━━━━━━━━━━━━━━━━\n`;
+            text += `🔗 **Subscription Connection:**\n<code>${subSync}</code>`;
+            
+            const kb = {
+                inline_keyboard: [
+                    [
+                        { text: u.isPaused ? `▶️ ${t("btn_resume")}` : `⏸️ ${t("btn_pause")}`, callback_data: `sub_toggle:${u.id}` },
+                        { text: `🗑️ ${t("btn_del")}`, callback_data: `sub_del_init:${u.id}` }
+                    ],
+                    [
+                        { text: `✏️ ${t("btn_edit_name")}`, callback_data: `sub_edit_name_init:${u.id}` },
+                        { text: `⚙️ ${t("btn_edit_limits")}`, callback_data: `sub_edit_limits_init:${u.id}` }
+                    ],
+                    [
+                        { text: "🔙 Back to List", callback_data: "subs_list:0" }
+                    ]
+                ]
+            };
+            return { text, kb };
+        };
+
         if (update.callback_query) {
             const cb = update.callback_query;
             const chatId = cb.message?.chat?.id;
+            const messageId = cb.message?.message_id;
             const data = cb.data;
 
             if (chatId) {
-                if (data === "get_usage") {
-                    let usageStr = "نامشخص (0.00%)";
+                // Clear state on callback query to keep bot highly responsive and intuitive
+                tgState[chatId] = null;
+                ctx?.waitUntil(d1Put(env, "tg_bot_state", JSON.stringify(tgState)));
+
+                if (data === "main_menu") {
+                    const menu = getMainMenu();
+                    await sendOrEdit(chatId, menu.text, menu.kb, messageId);
+                } else if (data === "sys_lang") {
+                    sysConfig.tgBotLang = (langCode === "fa") ? "en" : "fa";
+                    await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                    const menu = getMainMenu();
+                    await sendOrEdit(chatId, menu.text, menu.kb, messageId);
+                } else if (data === "sys_toggle_status") {
+                    sysConfig.isPaused = !sysConfig.isPaused;
+                    await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                    const menu = getMainMenu();
+                    await sendOrEdit(chatId, menu.text, menu.kb, messageId);
+                } else if (data === "sys_metrics") {
+                    let usageStr = t("unlimited");
                     if (sysConfig.cfAccountId && sysConfig.cfApiToken) {
                         const reqs = await fetchCloudflareUsage(sysConfig.cfAccountId, sysConfig.cfApiToken);
                         if (reqs !== null) {
                             const pct = ((reqs / 100000) * 100).toFixed(2);
                             usageStr = `${reqs}/100000 (${pct}%)`;
-                        } else {
-                            usageStr = "خطا در دریافت مصرف";
                         }
-                    } else {
-                        usageStr = "مقادیر CF تنظیم نشده است";
                     }
-
-                    await fetch(`${tgApi}/answerCallbackQuery`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ callback_query_id: cb.id, text: `مصرف روزانه:\n${usageStr}`, show_alert: true })
-                    });
-                } else if (data === "get_sub") {
-                    const subSync = `https://${hostName}/${encodeURI(sysConfig.apiRoute)}`;
-                    await fetch(`${tgApi}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            chat_id: chatId, 
-                            text: `🔗 **لینک استریم شما:**\n\n<code>${subSync}</code>`, 
-                            parse_mode: 'HTML' 
-                        })
-                    });
-                    await fetch(`${tgApi}/answerCallbackQuery`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ callback_query_id: cb.id, text: "لینک استریم ارسال شد." })
-                    });
-                } else if (data === "cb_pause") {
-                    sysConfig.isPaused = true;
-                    await d1Put(env, "sys_config", JSON.stringify({ ...sysConfig, isPaused: true }));
-                    await fetch(`${tgApi}/answerCallbackQuery`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ callback_query_id: cb.id, text: "سیستم متوقف شد. 🔴" }) });
-                } else if (data === "cb_resume") {
-                    sysConfig.isPaused = false;
-                    await d1Put(env, "sys_config", JSON.stringify({ ...sysConfig, isPaused: false }));
-                    await fetch(`${tgApi}/answerCallbackQuery`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ callback_query_id: cb.id, text: "سیستم مجدداً فعال شد. 🟢" }) });
-                }
-            }
-        } else if (update.message && update.message.text) {
-            const chatId = update.message.chat.id;
-            
-            if (chatId.toString() === sysConfig.tgChatId.toString()) {
-                const text = update.message.text;
-                if (text === "/status") {
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `وضعیت سیستم: ${sysConfig.isPaused ? "🔴 متوقف شده" : "🟢 فعال"}` }) });
-                } else if (text === "/pause") {
-                    sysConfig.isPaused = true;
-                    await d1Put(env, "sys_config", JSON.stringify({ ...sysConfig, isPaused: true }));
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "🔴 جریان داده‌ها متوقف شد." }) });
-                } else if (text === "/resume") {
-                    sysConfig.isPaused = false;
-                    await d1Put(env, "sys_config", JSON.stringify({ ...sysConfig, isPaused: false }));
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "🟢 جریان داده‌ها مجدداً برقرار شد." }) });
-                } else if (text === "/ping") {
                     const upSeconds = Math.floor((Date.now() - isolateStartTime)/1000);
                     const dh = Math.floor(upSeconds/3600);
                     const dm = Math.floor((upSeconds%3600)/60);
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `🟢 Gateway Health:\n\n⏱ Uptime: ${dh}h ${dm}m\n📡 Active Streams: ${activeConnections}` }) });
-                } else if (text === "/panic") {
+                    
+                    let text = `📡 **${t("metrics")}**\n`;
+                    text += `━━━━━━━━━━━━━━━━\n`;
+                    text += `⏱ **${t("uptime")}**: ${dh}h ${dm}m\n`;
+                    text += `🔌 **${t("streams")}**: ${activeConnections}\n`;
+                    text += `📊 **Cloudflare API Usage**: ${usageStr}\n`;
+                    text += `━━━━━━━━━━━━━━━━`;
+                    
+                    const kb = { inline_keyboard: [[{ text: `🔙 Main Menu`, callback_data: "main_menu" }]] };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data.startsWith("subs_list:")) {
+                    const page = parseInt(data.replace("subs_list:", "")) || 0;
+                    const list = getSubsList(page);
+                    await sendOrEdit(chatId, list.text, list.kb, messageId);
+                } else if (data.startsWith("sub_detail:")) {
+                    const uuid = data.replace("sub_detail:", "");
+                    const detail = getSubDetail(uuid);
+                    await sendOrEdit(chatId, detail.text, detail.kb, messageId);
+                } else if (data.startsWith("sub_toggle:")) {
+                    const uuid = data.replace("sub_toggle:", "");
+                    if (sysConfig.users) {
+                        const u = sysConfig.users.find(usr => usr.id === uuid);
+                        if (u) {
+                            u.isPaused = !u.isPaused;
+                            await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                        }
+                    }
+                    const detail = getSubDetail(uuid);
+                    await sendOrEdit(chatId, detail.text, detail.kb, messageId);
+                } else if (data.startsWith("sub_del_init:")) {
+                    const uuid = data.replace("sub_del_init:", "");
+                    const u = sysConfig.users?.find(usr => usr.id === uuid);
+                    const name = u ? u.name : "";
+                    const text = `${t("msg_confirm_del")}\n\n👤 **${name}**`;
+                    const kb = {
+                        inline_keyboard: [
+                            [
+                                { text: `✅ ${t("btn_confirm")}`, callback_data: `sub_del_confirm:${uuid}` },
+                                { text: `❌ ${t("btn_cancel")}`, callback_data: `sub_detail:${uuid}` }
+                            ]
+                        ]
+                    };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data.startsWith("sub_del_confirm:")) {
+                    const uuid = data.replace("sub_del_confirm:", "");
+                    if (sysConfig.users) {
+                        sysConfig.users = sysConfig.users.filter(usr => usr.id !== uuid);
+                        await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                    }
+                    const successText = `✅ ${t("msg_deleted")}`;
+                    const kb = { inline_keyboard: [[{ text: t("btn_back"), callback_data: "subs_list:0" }]] };
+                    await sendOrEdit(chatId, successText, kb, messageId);
+                } else if (data === "sub_add_init") {
+                    tgState[chatId] = { step: "sub_add_name" };
+                    await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                    const text = `➕ ${t("msg_enter_name")}`;
+                    const kb = { inline_keyboard: [[{ text: `❌ ${t("btn_cancel")}`, callback_data: "subs_list:0" }]] };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data.startsWith("sub_edit_name_init:")) {
+                    const uuid = data.replace("sub_edit_name_init:", "");
+                    tgState[chatId] = { step: `sub_edit_name:${uuid}` };
+                    await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                    const text = `✏️ ${t("msg_enter_name")}`;
+                    const kb = { inline_keyboard: [[{ text: `❌ ${t("btn_cancel")}`, callback_data: `sub_detail:${uuid}` }]] };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data.startsWith("sub_edit_limits_init:")) {
+                    const uuid = data.replace("sub_edit_limits_init:", "");
+                    tgState[chatId] = { step: `sub_edit_limits:${uuid}` };
+                    await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                    const text = `⚙️ ${t("msg_enter_limits")}`;
+                    const kb = {
+                        inline_keyboard: [
+                            [{ text: `♾️ Skip (Unlimited)`, callback_data: `sub_unlimit_cb:${uuid}` }],
+                            [{ text: `❌ ${t("btn_cancel")}`, callback_data: `sub_detail:${uuid}` }]
+                        ]
+                    };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data.startsWith("sub_unlimit_cb:")) {
+                    const uuid = data.replace("sub_unlimit_cb:", "");
+                    if (sysConfig.users) {
+                        const u = sysConfig.users.find(usr => usr.id === uuid);
+                        if (u) {
+                            u.limitTotalReq = null;
+                            u.limitDailyReq = null;
+                            u.expiryMs = null;
+                            await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                        }
+                    }
+                    const detail = getSubDetail(uuid);
+                    await sendOrEdit(chatId, detail.text, detail.kb, messageId);
+                } else if (data === "sub_add_unlimited_skip") {
+                    let stateName = "Subscriber";
+                    try {
+                        const savedStateRaw = await d1Get(env, "tg_bot_state");
+                        if (savedStateRaw) {
+                            const stObj = JSON.parse(savedStateRaw);
+                            if (stObj[chatId] && stObj[chatId].name) {
+                                stateName = stObj[chatId].name;
+                            }
+                        }
+                    } catch(e){}
+                    
+                    const newUuid = crypto.randomUUID();
+                    if (!sysConfig.users) sysConfig.users = [];
+                    sysConfig.users.push({
+                        id: newUuid,
+                        name: stateName,
+                        limitTotalReq: null,
+                        limitDailyReq: null,
+                        expiryMs: null,
+                        createdAt: Date.now()
+                    });
+                    
+                    tgState[chatId] = null;
+                    await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                    await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                    
+                    const successText = `✅ ${t("msg_added")}`;
+                    const detail = getSubDetail(newUuid);
+                    await sendOrEdit(chatId, `${successText}\n\n${detail.text}`, detail.kb, messageId);
+                } else if (data === "sys_panic_init") {
+                    const text = `${t("msg_confirm_panic")}`;
+                    const kb = {
+                        inline_keyboard: [
+                            [
+                                { text: `🚨 YES PANIC 🚨`, callback_data: "sys_panic_confirm" },
+                                { text: `❌ No, Cancel`, callback_data: "main_menu" }
+                            ]
+                        ]
+                    };
+                    await sendOrEdit(chatId, text, kb, messageId);
+                } else if (data === "sys_panic_confirm") {
                     sysConfig.apiRoute = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2,'0')).join('');
                     sysConfig.isPaused = true;
                     await d1Put(env, "sys_config", JSON.stringify(sysConfig));
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `🚨 PANIC MODE ACTIVATED 🚨\n\nRoute randomized & System Paused.\nAccess Revoked.` }) });
-                } else if (text.startsWith("/users")) {
-                    let umsg = "👥 لیست کاربران:\n\n";
-                    if(!sysConfig.users || sysConfig.users.length === 0) umsg += "کاربری یافت نشد.";
-                    else {
-                        sysConfig.users.forEach(u => {
-                            let sysU = sysUsageCache?.users?.[u.id.replace(/-/g,'').toLowerCase()] || {};
-                            let reqs = sysU.reqs || 0;
-                            let dReqs = sysU.lastDay === new Date().toISOString().split('T')[0] ? (sysU.dReqs || 0) : 0;
-                            umsg += `👤 ${u.name}\nUUID: ${u.id}\nدرخواست کل: ${reqs} ${u.limitTotalReq ? '/ ' + u.limitTotalReq : ''}\nدرخواست روزانه: ${dReqs} ${u.limitDailyReq ? '/ ' + u.limitDailyReq : ''}\n\n`;
-                        });
+                    const successText = `${t("msg_panic")}\n\n🔑 New Secret Path Randomized. All old sessions revoked.`;
+                    const kb = { inline_keyboard: [[{ text: `🔙 Main Menu`, callback_data: "main_menu" }]] };
+                    await sendOrEdit(chatId, successText, kb, messageId);
+                }
+                
+                await fetch(`${tgApi}/answerCallbackQuery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ callback_query_id: cb.id, text: "Done!" })
+                });
+            }
+        } else if (update.message && update.message.text) {
+            const chatId = update.message.chat.id;
+            const text = update.message.text.trim();
+            
+            if (chatId.toString() === sysConfig.tgChatId.toString()) {
+                const state = tgState[chatId];
+                
+                if (state) {
+                    if (state.step === "sub_add_name") {
+                        const name = text;
+                        tgState[chatId] = { step: "sub_add_limits", name: name };
+                        await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                        
+                        const msg = `⚙️ **${name}**\n\n${t("msg_enter_limits")}`;
+                        const kb = {
+                            inline_keyboard: [
+                                [{ text: `♾️ Skip (Unlimited)`, callback_data: "sub_add_unlimited_skip" }],
+                                [{ text: `❌ ${t("btn_cancel")}`, callback_data: "main_menu" }]
+                            ]
+                        };
+                        await sendOrEdit(chatId, msg, kb);
+                        return new Response("OK", { status: 200 });
                     }
-                    await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: umsg }) });
-                } else if (text.startsWith("/adduser")) {
-                    const parts = text.split(" ");
-                    if(parts.length < 2) {
-                        await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "طرز استفاده: /adduser [name] [total_reqs] [daily_reqs] [days_limit]\n(برای مقادیر نامحدود از 0 استفاده کنید)" }) });
-                    } else {
-                        const name = parts[1];
-                        const tReq = parts[2] && parseInt(parts[2]) > 0 ? parseInt(parts[2]) : null;
-                        const dReq = parts[3] && parseInt(parts[3]) > 0 ? parseInt(parts[3]) : null;
-                        const days = parts[4] && parseInt(parts[4]) > 0 ? parseInt(parts[4]) : null;
+                    
+                    if (state.step === "sub_add_limits" || state.step === "sub_add_unlimited_skip") {
+                        const name = state.name;
+                        let tReq = null;
+                        let dReq = null;
+                        let days = null;
+                        
+                        if (state.step !== "sub_add_unlimited_skip" && text !== "0" && text !== "0 0 0") {
+                            const parts = text.split(/\s+/).map(Number);
+                            if (parts[0] > 0) tReq = parts[0];
+                            if (parts[1] > 0) dReq = parts[1];
+                            if (parts[2] > 0) days = parts[2];
+                        }
+                        
                         const newUuid = crypto.randomUUID();
-                        if(!sysConfig.users) sysConfig.users = [];
+                        if (!sysConfig.users) sysConfig.users = [];
                         sysConfig.users.push({
-                            id: newUuid, name: name, limitTotalReq: tReq, limitDailyReq: dReq,
-                            expiryMs: days ? Date.now() + days*86400000 : null,
+                            id: newUuid,
+                            name: name,
+                            limitTotalReq: tReq,
+                            limitDailyReq: dReq,
+                            expiryMs: days ? Date.now() + days * 86400000 : null,
                             createdAt: Date.now()
                         });
+                        
+                        tgState[chatId] = null;
+                        await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
                         await d1Put(env, "sys_config", JSON.stringify(sysConfig));
-                        await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: `✅ کاربر جدید اضافه شد.\n\nنام: ${name}\nUUID: ${newUuid}\nدرخواست کل: ${tReq ? tReq : 'نامحدود'}\nدرخواست روزانه: ${dReq ? dReq : 'نامحدود'}\nاعتبار: ${days ? days + ' روز' : 'نامحدود'}` }) });
+                        
+                        const successText = `✅ ${t("msg_added")}`;
+                        const detail = getSubDetail(newUuid);
+                        await sendOrEdit(chatId, `${successText}\n\n${detail.text}`, detail.kb);
+                        return new Response("OK", { status: 200 });
                     }
-                } else if (text.startsWith("/deluser")) {
-                    const parts = text.split(" ");
-                    if(parts.length < 2) {
-                        await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "طرز استفاده: /deluser [uuid]" }) });
-                    } else {
-                        const initLen = sysConfig.users ? sysConfig.users.length : 0;
-                        if(sysConfig.users) sysConfig.users = sysConfig.users.filter(u => u.id !== parts[1]);
-                        if(sysConfig.users.length < initLen) {
-                            await d1Put(env, "sys_config", JSON.stringify(sysConfig));
-                            await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "✅ کاربر حذف شد." }) });
-                        } else {
-                            await fetch(`${tgApi}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: "❌ کاربری با این UUID یافت نشد." }) });
-                        }
-                    }
-                } else {
-                    const panelUrl = `https://${hostName}/${encodeURI(sysConfig.apiRoute)}/dash`;
-                    await fetch(`${tgApi}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: "🤖 **ربات سیستم نهان**\nانتخاب کنید:\n\nدستورات سریع:\n/pause - توقف اتصالات\n/resume - از سرگیری\n/status - وضعیت\n/ping - پراکسی وضعیت\n/users - لیست کاربران\n/adduser [name] [gb] [days] - افزودن کاربر\n/deluser [uuid] - حذف کاربر\n/panic - قطع دسترسی 🚨",
-                            parse_mode: 'HTML',
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{ text: "ورود به کنترل‌پنل 🔐", web_app: { url: panelUrl } }],
-                                    [
-                                        { text: "دریافت استریم 🔗", callback_data: "get_sub" },
-                                        { text: "بررسی محدودیت 📊", callback_data: "get_usage" }
-                                    ],
-                                    [
-                                        { text: sysConfig.isPaused ? "▶️ شروع سیستم" : "⏸ توقف سیستم", callback_data: sysConfig.isPaused ? "cb_resume" : "cb_pause" }
-                                    ]
-                                ]
+                    
+                    if (state.step.startsWith("sub_edit_name:")) {
+                        const uuid = state.step.replace("sub_edit_name:", "");
+                        if (sysConfig.users) {
+                            const u = sysConfig.users.find(usr => usr.id === uuid);
+                            if (u) {
+                                u.name = text;
+                                await d1Put(env, "sys_config", JSON.stringify(sysConfig));
                             }
-                        })
-                    });
+                        }
+                        tgState[chatId] = null;
+                        await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                        
+                        const detail = getSubDetail(uuid);
+                        await sendOrEdit(chatId, `✅ Successfully Changed!`, detail.kb);
+                        return new Response("OK", { status: 200 });
+                    }
+                    
+                    if (state.step.startsWith("sub_edit_limits:")) {
+                        const uuid = state.step.replace("sub_edit_limits:", "");
+                        let tReq = null;
+                        let dReq = null;
+                        let days = null;
+                        
+                        const parts = text.split(/\s+/).map(Number);
+                        if (parts[0] > 0) tReq = parts[0];
+                        if (parts[1] > 0) dReq = parts[1];
+                        if (parts[2] > 0) days = parts[2];
+                        
+                        if (sysConfig.users) {
+                            const u = sysConfig.users.find(usr => usr.id === uuid);
+                            if (u) {
+                                u.limitTotalReq = tReq;
+                                u.limitDailyReq = dReq;
+                                u.expiryMs = days ? Date.now() + days * 86400000 : null;
+                                await d1Put(env, "sys_config", JSON.stringify(sysConfig));
+                            }
+                        }
+                        tgState[chatId] = null;
+                        await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
+                        
+                        const detail = getSubDetail(uuid);
+                        await sendOrEdit(chatId, `✅ Limits Updated!`, detail.kb);
+                        return new Response("OK", { status: 200 });
+                    }
                 }
+                
+                // Default message / fallback menu
+                const menu = getMainMenu();
+                await sendOrEdit(chatId, menu.text, menu.kb);
             }
         }
         return new Response("OK", { status: 200 });
@@ -801,6 +1202,25 @@ function buildSingleUri(hostName) {
     return `${uriProto}://${activeDeviceId}@${finalIP}:${firstPort}?${ext}#${finalHost}`;
 }
 
+function getConfigName(type, profileName, port, hostName, ip) {
+    let prefix = sysConfig.namePrefix || "Core";
+    let strategy = sysConfig.nameStrategy || "default";
+    let cleanName = profileName === "Default" ? "" : `-${profileName}`;
+    let typeLab = type === "alpha" ? "V" : "T";
+    
+    if (strategy === "type-user-port") {
+        return `${type === "alpha" ? "vless" : "trojan"}-${profileName}-${port}`;
+    } else if (strategy === "user-port") {
+        return `${profileName}-${port}`;
+    } else if (strategy === "host-port-user") {
+        return `${hostName}-${port}${cleanName}`;
+    } else if (strategy === "prefix-user-port") {
+        return `${prefix}${cleanName}-${port}`;
+    } else { // "default"
+        return `${typeLab}-Core-${port}${cleanName}`;
+    }
+}
+
 function buildUriProfile(hostName, targetSub = null) {
     let allHostNames = [hostName];
     if (sysConfig.slaveNodes) allHostNames.push(...sysConfig.slaveNodes.split(/[\r\n,;]+/).map(s=>s.trim()).filter(Boolean));
@@ -819,9 +1239,8 @@ function buildUriProfile(hostName, targetSub = null) {
                 let extBase = `encryption=none&security=${sec}&sni=${hName}&fp=${sysConfig.agent}&type=ws&host=${hName}&path=${reqPath}`;
                 if (sysConfig.enableOpt2) extBase += `&pbk=enabled`;
                 ips.forEach(ip => {
-                    let nameExt = p.name === "Default" ? `${port}` : `${port}-${p.name}`;
-                    let vName = `V-Core-${nameExt}`;
-                    let tName = `T-Core-${nameExt}`;
+                    let vName = getConfigName("alpha", p.name, port, hName, ip);
+                    let tName = getConfigName("beta", p.name, port, hName, ip);
                     
                     if (sysConfig.mode === "alpha" || sysConfig.mode === "both") {
                         lines.push(`${getAlpha()}://${p.id}@${ip}:${port}?${extBase}#${vName}`);
@@ -851,16 +1270,14 @@ function buildYamlProfile(hostName, targetSub = null) {
             ports.forEach(port => {
                 let sec = getTransportParams(port) === "tls" ? "true" : "false";
                 ips.forEach(ip => {
-                    let nameExt = p.name === "Default" ? `${port}` : `${port}-${p.name}`;
-                    
                     if (sysConfig.mode === "alpha" || sysConfig.mode === "both") {
-                        let vName = `V-Core-${nameExt}`;
+                        let vName = getConfigName("alpha", p.name, port, hName, ip);
                         proxyNames.push(`"${vName}"`);
                         proxies.push(`- name: "${vName}"\n  type: ${getAlpha()}\n  server: ${ip}\n  port: ${port}\n  uuid: ${p.id}\n  udp: true\n  tls: ${sec}\n  sni: ${hName}\n  client-fingerprint: ${sysConfig.agent}\n  network: ws\n  ws-opts:\n    path: "/${sysConfig.apiRoute}"\n    headers: { Host: ${hName} }\n${sysConfig.enableOpt1 ? "  tfo: true" : ""}`);
                     }
 
                     if (sysConfig.mode === "beta" || sysConfig.mode === "both") {
-                        let tName = `T-Core-${nameExt}`;
+                        let tName = getConfigName("beta", p.name, port, hName, ip);
                         proxyNames.push(`"${tName}"`);
                         proxies.push(`- name: "${tName}"\n  type: ${getBeta()}\n  server: ${ip}\n  port: ${port}\n  password: ${p.id}\n  udp: true\n  tls: ${sec}\n  sni: ${hName}\n  client-fingerprint: ${sysConfig.agent}\n  network: ws\n  ws-opts:\n    path: "/${sysConfig.apiRoute}"\n    headers: { Host: ${hName} }\n${sysConfig.enableOpt1 ? "  tfo: true" : ""}`);
                     }
@@ -1028,9 +1445,9 @@ function getDashboardUI(hasDB) {
                       <!-- NETWORK/METRICS VIEW -->
                       <div id="view-network" class="hidden space-y-6">
                             <div class="bg-white dark:bg-darkcard rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-darkborder mb-6">
-                              <h3 class="text-sm uppercase font-bold text-slate-500 tracking-wider mb-4">Live Profile Usage</h3>
+                              <h3 class="text-sm uppercase font-bold text-slate-500 tracking-wider mb-4" data-i18n="metrics_live">Live Profile Usage</h3>
                               <div id="usage-metrics-container" class="flex flex-col">
-                                  <p class="text-xs text-slate-400 text-center py-4">No active connection data yet.</p>
+                                  <p class="text-xs text-slate-400 text-center py-4" data-i18n="no_metrics">No active connection data yet.</p>
                               </div>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -1057,25 +1474,25 @@ function getDashboardUI(hasDB) {
                                           <h3 class="text-sm uppercase font-bold text-slate-400 mb-1" data-i18n="ping_test_title">Latency Diagnostics</h3>
                                           <p class="text-xs text-slate-500" data-i18n="ping_test_desc">Test response time to your active node target.</p>
                                       </div>
-                                      <button onclick="runPingTest()" class="px-6 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl transition-colors text-sm">
+                                      <button onclick="runPingTest()" class="px-6 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl transition-colors text-sm" data-i18n="run_diagnostics">
                                           ⚡ Run Diagnostics
                                       </button>
                                   </div>
                                   <div id="ping-results" class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 hidden">
                                       <div class="bg-slate-50 dark:bg-darkbg p-3 rounded-xl border border-slate-100 dark:border-darkborder/50">
-                                          <p class="text-[10px] uppercase font-bold text-slate-400">Target Node</p>
+                                          <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="target_node">Target Node</p>
                                           <p id="ping-target" class="text-sm font-bold font-mono truncate">...</p>
                                       </div>
                                       <div class="bg-slate-50 dark:bg-darkbg p-3 rounded-xl border border-slate-100 dark:border-darkborder/50">
-                                          <p class="text-[10px] uppercase font-bold text-slate-400">Response</p>
+                                          <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="response">Response</p>
                                           <p id="ping-time" class="text-sm font-bold font-mono text-emerald-500">...</p>
                                       </div>
                                       <div class="bg-slate-50 dark:bg-darkbg p-3 rounded-xl border border-slate-100 dark:border-darkborder/50">
-                                          <p class="text-[10px] uppercase font-bold text-slate-400">Status</p>
+                                          <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="status">Status</p>
                                           <p id="ping-status" class="text-sm font-bold">...</p>
                                       </div>
                                       <div class="bg-slate-50 dark:bg-darkbg p-3 rounded-xl border border-slate-100 dark:border-darkborder/50">
-                                          <p class="text-[10px] uppercase font-bold text-slate-400">Local Port</p>
+                                          <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="local_port">Local Port</p>
                                           <p id="ping-port" class="text-sm font-bold font-mono">...</p>
                                       </div>
                                   </div>
@@ -1139,11 +1556,11 @@ function getDashboardUI(hasDB) {
                               <div class="bg-white dark:bg-darkcard rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-darkborder md:col-span-2 space-y-4">
                                   <h3 class="text-sm uppercase font-bold text-slate-400 tracking-wider" data-i18n="backup_restore_title">Backup & Restore</h3>
                                   <div class="flex flex-col sm:flex-row gap-4">
-                                      <button onclick="exportConfig()" class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-colors text-sm">
+                                      <button onclick="exportConfig()" class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-colors text-sm" data-i18n="export_btn">
                                           📥 Export Configuration (JSON)
                                       </button>
                                       <label class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-colors text-sm text-center cursor-pointer">
-                                          📤 Import Configuration (JSON)
+                                          <span data-i18n="import_btn">📤 Import Configuration (JSON)</span>
                                           <input type="file" id="import-file" class="hidden" accept=".json" onchange="importConfig(event)">
                                       </label>
                                   </div>
@@ -1169,16 +1586,16 @@ function getDashboardUI(hasDB) {
                               <div class="flex items-center justify-between mb-2">
                                   <h3 class="text-sm uppercase font-black text-indigo-800 dark:text-indigo-300 tracking-wider flex items-center">
                                       <svg class="w-5 h-5 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                                      Slave Worker Nodes
+                                      <span data-i18n="slave_title">Slave Worker Nodes</span>
                                   </h3>
                               </div>
-                              <p class="text-xs text-indigo-600/80 dark:text-indigo-300/70 mb-4 leading-relaxed">Enter your other worker Domains (one per line). Master will push settings and users to them automatically, and include them in load-balanced subscriptions!</p>
+                              <p class="text-xs text-indigo-600/80 dark:text-indigo-300/70 mb-4 leading-relaxed" data-i18n="slave_desc">Enter your other worker Domains (one per line). Master will push settings and users to them automatically, and include them in load-balanced subscriptions!</p>
                               <div class="relative">
                                   <textarea id="cfg-nodes" rows="3" placeholder="node1.worker.dev&#10;node2.domain.com" class="w-full px-4 py-3 pb-12 rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-white dark:bg-slate-900 focus:border-indigo-500 focus:ring-1 outline-none font-mono text-sm resize-none scrollbar-hide text-slate-700 dark:text-slate-300 placeholder:text-indigo-200 dark:placeholder:text-indigo-800/50"></textarea>
                                   <div class="absolute bottom-3 end-3">
                                       <button onclick="forceSyncNodes()" type="button" class="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center shadow-sm">
                                           <svg id="sync-icon" class="w-3.5 h-3.5 me-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                          <span id="sync-btn-txt">Force Sync Now</span>
+                                          <span id="sync-btn-txt" data-i18n="force_sync">Force Sync Now</span>
                                       </button>
                                   </div>
                               </div>
@@ -1196,7 +1613,7 @@ function getDashboardUI(hasDB) {
                                   <input type="text" id="cfg-dns" placeholder="1.1.1.1" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none text-sm">
                               </div>
                               <div class="space-y-1 text-start">
-                                  <label class="block text-sm font-bold text-slate-600 dark:text-slate-300 ms-1">Custom DNS (DoH Provider)</label>
+                                  <label class="block text-sm font-bold text-slate-600 dark:text-slate-300 ms-1" data-i18n="lbl_doh">Custom DNS (DoH Provider)</label>
                                   <input type="text" id="cfg-custom-dns" placeholder="https://cloudflare-dns.com/dns-query" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none text-sm">
                               </div>
                               <div class="space-y-1 md:col-span-2 text-start">
@@ -1206,6 +1623,24 @@ function getDashboardUI(hasDB) {
                               <div class="space-y-1 md:col-span-2 text-start">
                                   <label class="block text-sm font-bold text-slate-600 dark:text-slate-300 ms-1" data-i18n="lbl_relay">Backup Relay IP</label>
                                   <input type="text" id="cfg-relay" placeholder="proxyip.cmliussss.net" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none text-sm">
+                              </div>
+                          </div>
+  
+                          <!-- Custom Name Strategy -->
+                          <div class="bg-white dark:bg-darkcard rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-darkborder grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
+                              <div class="space-y-1 text-start">
+                                  <label class="block text-sm font-bold text-slate-600 dark:text-slate-300 ms-1" data-i18n="lbl_strategy">Configuration Name Strategy</label>
+                                  <select id="cfg-name-strategy" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none appearance-none">
+                                      <option value="default">Default Core Name (e.g. V-Core-443-User)</option>
+                                      <option value="type-user-port">Protocol-User-Port (e.g. vless-User-443)</option>
+                                      <option value="user-port">User-Port (e.g. User-443)</option>
+                                      <option value="host-port-user">Hostname-Port-User</option>
+                                      <option value="prefix-user-port">Custom Prefix-User-Port</option>
+                                  </select>
+                              </div>
+                              <div class="space-y-1 text-start">
+                                  <label class="block text-sm font-bold text-slate-600 dark:text-slate-300 ms-1" data-i18n="lbl_prefix">Custom Name Prefix</label>
+                                  <input type="text" id="cfg-name-prefix" placeholder="Core" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none text-sm">
                               </div>
                           </div>
   
@@ -1337,6 +1772,36 @@ function getDashboardUI(hasDB) {
                           </div>
                       </div>
 
+                      <!-- Modal: Edit User -->
+                      <div id="modal-edit-user" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                          <div class="bg-white dark:bg-darkcard rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-200 dark:border-darkborder">
+                              <h3 class="text-xl font-bold mb-4">Edit Subscriber</h3>
+                              <input type="hidden" id="edit-user-id">
+                              <div class="space-y-4">
+                                  <div>
+                                      <label class="block text-xs font-bold text-slate-500 mb-1">Name / Identifier</label>
+                                      <input type="text" id="edit-user-name" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                  </div>
+                                  <div>
+                                      <label class="block text-xs font-bold text-slate-500 mb-1">Total Requests Limit (Leave empty for unlimited)</label>
+                                      <input type="number" id="edit-user-total-reqs" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                  </div>
+                                  <div>
+                                      <label class="block text-xs font-bold text-slate-500 mb-1">Daily Requests Limit (Leave empty for unlimited)</label>
+                                      <input type="number" id="edit-user-daily-reqs" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                  </div>
+                                  <div>
+                                      <label class="block text-xs font-bold text-slate-500 mb-1">Expiration limit (Days remaining) - Leave empty for unlimited</label>
+                                      <input type="number" id="edit-user-days" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                  </div>
+                                  <div class="flex justify-end gap-2 mt-6">
+                                      <button onclick="document.getElementById('modal-edit-user').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">Cancel</button>
+                                      <button onclick="commitEditUser()" class="px-4 py-2 rounded-xl bg-primary text-white font-bold">Save Changes</button>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
                       <!-- LOGS VIEW -->
                       <div id="view-logs" class="hidden space-y-6">
                           <div class="bg-white dark:bg-darkcard rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-darkborder relative overflow-hidden">
@@ -1431,7 +1896,15 @@ function getDashboardUI(hasDB) {
                   modal_add_title: "Add New User", lbl_u_name: "Name (Required)", lbl_u_gb: "Traffic Limit (GB) - Optional", lbl_u_days: "Duration (Days) - Optional", btn_cancel: "Cancel", btn_confirm: "Add User",
                   save_btn: "Update Config", msg_saving: "Syncing...", msg_saved: "Success! Reloading...", msg_err: "Sync Error",
                   backup_restore_title: "Backup & Restore", ping_test_title: "Latency Diagnostics", ping_test_desc: "Test response time to your active node target.",
-                  lbl_github_repo: "GitHub Update Repository", update_avail: "New version available!", update_btn: "Get Latest Code"
+                  lbl_github_repo: "GitHub Update Repository", update_avail: "New version available!", update_btn: "Get Latest Code",
+                  metrics_live: "Live Profile Usage", no_metrics: "No active connection data yet.", run_diagnostics: "⚡ Run Diagnostics",
+                  target_node: "Target Node", response: "Response", status: "Status", local_port: "Local Port",
+                  lbl_doh: "Custom DNS (DoH Provider)", lbl_strategy: "Configuration Name Strategy", lbl_prefix: "Custom Name Prefix",
+                  slave_title: "Slave Worker Nodes", slave_desc: "Enter your other worker Domains (one per line). Master will push settings and users to them automatically, and include them in load-balanced subscriptions!",
+                  force_sync: "Force Sync Now", limit_total: "Total Requests Limit (Leave empty for unlimited)", limit_daily: "Daily Requests Limit (Leave empty for unlimited)",
+                  limit_days: "Expiration limit (Days) - Leave empty for unlimited", edit_sub: "Edit Subscriber", lbl_name_ph: "Name / Identifier",
+                  btn_save_changes: "Save Changes", save_btn_user: "Save User", status_active: "Active", status_paused: "Paused", status_expired: "Expired",
+                  export_btn: "📥 Export Configuration (JSON)", import_btn: "📤 Import Configuration (JSON)"
               },
               fa: {
                   title: "دروازه نهان", pass_ph: "کلید اصلی", login_btn: "ورود به سیستم", err_pass: "دسترسی مسدود شد", missing_db: "⚠️ فضای IOT_DB یافت نشد! تنظیمات ذخیره نمی‌شوند.",
@@ -1450,7 +1923,15 @@ function getDashboardUI(hasDB) {
                   modal_add_title: "افزودن کاربر جدید", lbl_u_name: "نام (الزامی)", lbl_u_gb: "محدودیت ترافیک (گیگابایت) - اختیاری", lbl_u_days: "مدت زمان اعتبار (روز) - اختیاری", btn_cancel: "انصراف", btn_confirm: "افزودن کاربر",
                   save_btn: "ذخیره تنظیمات", msg_saving: "در حال ثبت...", msg_saved: "موفق! در حال بارگذاری...", msg_err: "خطای ارتباط",
                   backup_restore_title: "پشتیبان‌گیری و بازیابی", ping_test_title: "عیب‌یابی تاخیر شبکه", ping_test_desc: "تاخیر پاسخ‌دهی را به آی‌پی تمیز فعال اندازه بگیرید.",
-                  lbl_github_repo: "مخزن گیت‌هاب جهت آپدیت", update_avail: "بروزرسانی جدید در دسترس است!", update_btn: "دریافت آخرین کد"
+                  lbl_github_repo: "مخزن گیت‌هاب جهت آپدیت", update_avail: "بروزرسانی جدید در دسترس است!", update_btn: "دریافت آخرین کد",
+                  metrics_live: "وضعیت زنده مصرف اتصالات و پردازش", no_metrics: "هنوز داده‌ای از تراکنش و اتصالات فعال ثبت نشده است.", run_diagnostics: "⚡ اجرای عیب‌یابی شبکه",
+                  target_node: "هدف گره شبکه", response: "مدت تاخیر (Latency)", status: "وضعیت گره", local_port: "درگاه محلی",
+                  lbl_doh: "تحلیل‌گر تخصصی DNS (سرویس DoH)", lbl_strategy: "روش نام‌گذاری کانفیگ‌ها", lbl_prefix: "پیشوند نام کانفیگ‌ها",
+                  slave_title: "سایر نودهای موازی (Slaves)", slave_desc: "آدرس دامنه سایر ورکرها را وارد نمایید (هر خط یک دامنه). نود اصلی تنظیمات و مشترکین را به صورت خودکار با آن‌ها هماهنگ می‌کند!",
+                  force_sync: "همگام‌سازی اجباری نودها", limit_total: "محدودیت تعداد کل درخواست‌ها (برای نامحدود خالی بگذارید)", limit_daily: "محدودیت درخواست‌های روزانه (برای نامحدود خالی بگذارید)",
+                  limit_days: "مدت زمان اعتبار قانونی (روز) - برای نامحدود خالی بگذارید", edit_sub: "ویرایش مشخصات مشترک", lbl_name_ph: "نام یا شناسه یکتا",
+                  btn_save_changes: "ذخیره تغییرات", save_btn_user: "ثبت کاربر جدید", status_active: "فعال", status_paused: "متوقف شده", status_expired: "منقضی شده",
+                  export_btn: "📥 برون‌بری فایل پیکربندی (JSON)", import_btn: "📤 درون‌ریزی فایل پیکربندی (JSON)"
               }
           };
   
@@ -1743,6 +2224,8 @@ function getDashboardUI(hasDB) {
                       document.getElementById('cfg-pause').checked = conf.isPaused || false;
                       document.getElementById('cfg-silent').checked = conf.silentAlerts || false;
                       document.getElementById('cfg-github-repo').value = conf.githubRepo || 'itsyebekhe/nahan';
+                      document.getElementById('cfg-name-strategy').value = conf.nameStrategy || 'default';
+                      document.getElementById('cfg-name-prefix').value = conf.namePrefix || 'Core';
   
                       window.nahanConfig = JSON.parse(JSON.stringify(conf));
                       window.nahanUsage = data.sysUsage || {};
@@ -1750,7 +2233,7 @@ function getDashboardUI(hasDB) {
                       renderUsersTable();
                       try { checkUpdate(); } catch(ue) { console.error(ue); }
 
-                      ['cfg-proto','cfg-port','cfg-fp','cfg-ips','cfg-nodes','cfg-path', 'cfg-relay'].forEach(id => {
+                      ['cfg-proto','cfg-port','cfg-fp','cfg-ips','cfg-nodes','cfg-path', 'cfg-relay', 'cfg-name-strategy', 'cfg-name-prefix'].forEach(id => {
                           const el = document.getElementById(id);
                           if(el) { el.addEventListener('input', updateUI); el.addEventListener('change', updateUI); }
                       });
@@ -1827,7 +2310,9 @@ function getDashboardUI(hasDB) {
                       tgToken: el('cfg-tg-token').value, tgChatId: el('cfg-tg-chat').value,
                       cfAccountId: el('cfg-cf-acc').value, cfApiToken: el('cfg-cf-token').value,
                       isPaused: el('cfg-pause').checked, silentAlerts: el('cfg-silent').checked,
-                      githubRepo: el('cfg-github-repo').value
+                      githubRepo: el('cfg-github-repo').value,
+                      nameStrategy: el('cfg-name-strategy').value,
+                      namePrefix: el('cfg-name-prefix').value
                   }
               };
               const stat = el('save-status'); stat.textContent = i18n[lang].msg_saving; stat.className = "text-sm font-bold text-primary animate-pulse md:me-4";
@@ -1864,7 +2349,9 @@ function getDashboardUI(hasDB) {
                       tgToken: el('cfg-tg-token').value, tgChatId: el('cfg-tg-chat').value,
                       cfAccountId: el('cfg-cf-acc').value, cfApiToken: el('cfg-cf-token').value,
                       isPaused: el('cfg-pause').checked, silentAlerts: el('cfg-silent').checked,
-                      githubRepo: el('cfg-github-repo').value
+                      githubRepo: el('cfg-github-repo').value,
+                      nameStrategy: el('cfg-name-strategy').value,
+                      namePrefix: el('cfg-name-prefix').value
                   }
               };
               
@@ -1918,6 +2405,8 @@ function getDashboardUI(hasDB) {
                   
                   let pauseBtnHtml = \`<button onclick="togglePauseUser('\${u.id}')" class="\${u.isPaused ? 'text-green-500 hover:text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-800/50' : 'text-amber-500 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/30 dark:hover:bg-amber-800/50'} p-2 rounded-lg" title="\${u.isPaused ? 'Resume User' : 'Pause User'}">\${u.isPaused ? '▶️' : '⏸️'}</button>\`;
 
+                  let editBtnHtml = \`<button onclick="editUser('\${u.id}')" class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50 p-2 rounded-lg" title="Edit Subscriber">✏️</button>\`;
+
                   let tr = document.createElement('tr');
                   tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors";
                   tr.innerHTML = \`
@@ -1929,6 +2418,7 @@ function getDashboardUI(hasDB) {
                           <input type="hidden" id="sync-\${u.id}" value="\${window.nahanProfiles.find(p => p.id === u.id)?.sync || ''}">
                           \${linkHtml}
                           \${pauseBtnHtml}
+                          \${editBtnHtml}
                           <button onclick="deleteUser('\${u.id}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/50 p-2 rounded-lg">🗑️</button>
                       </td>
                   \`;
@@ -1995,6 +2485,52 @@ function getDashboardUI(hasDB) {
               doSaveDirectly();
           }
 
+          function editUser(uuid) {
+              if(!window.nahanConfig || !window.nahanConfig.users) return;
+              let u = window.nahanConfig.users.find(usr => usr.id === uuid);
+              if(!u) return;
+              
+              document.getElementById('edit-user-id').value = u.id;
+              document.getElementById('edit-user-name').value = u.name;
+              document.getElementById('edit-user-total-reqs').value = u.limitTotalReq || '';
+              document.getElementById('edit-user-daily-reqs').value = u.limitDailyReq || '';
+              
+              let daysLeft = '';
+              if(u.expiryMs) {
+                  let diff = u.expiryMs - Date.now();
+                  daysLeft = diff > 0 ? Math.ceil(diff / 86400000) : 0;
+              }
+              document.getElementById('edit-user-days').value = daysLeft;
+              
+              document.getElementById('modal-edit-user').classList.remove('hidden');
+          }
+
+          function commitEditUser() {
+              const uuid = document.getElementById('edit-user-id').value;
+              const name = document.getElementById('edit-user-name').value;
+              let tReq = document.getElementById('edit-user-total-reqs').value;
+              let dReq = document.getElementById('edit-user-daily-reqs').value;
+              let days = document.getElementById('edit-user-days').value;
+              
+              if(!name) { alert('Please enter a name'); return; }
+              tReq = tReq ? parseInt(tReq) : null;
+              dReq = dReq ? parseInt(dReq) : null;
+              days = days ? parseInt(days) : null;
+              
+              if(!window.nahanConfig || !window.nahanConfig.users) return;
+              let u = window.nahanConfig.users.find(usr => usr.id === uuid);
+              if(!u) return;
+              
+              u.name = name;
+              u.limitTotalReq = tReq;
+              u.limitDailyReq = dReq;
+              u.expiryMs = days ? Date.now() + days*86400000 : null;
+              
+              document.getElementById('modal-edit-user').classList.add('hidden');
+              renderUsersTable();
+              doSaveDirectly();
+          }
+
           async function doSaveDirectly() {
               const btn = document.querySelector('button[onclick="doSave()"]');
               const origText = btn.innerText; btn.innerText = "...";
@@ -2044,7 +2580,7 @@ function getDashboardUI(hasDB) {
                   if (remoteVer) {
                       const strip = v => v.replace(/^v/, '').trim();
                       const rVer = strip(remoteVer);
-                      const cVer = strip("2.3.2");
+                      const cVer = strip("2.3.4");
                       
                       if (rVer && rVer > cVer) {
                           showUpdateBanner(repo, rVer);
@@ -2093,4 +2629,4 @@ function getDashboardUI(hasDB) {
   </body>
   </html>
     `;
-  }
+  } 
