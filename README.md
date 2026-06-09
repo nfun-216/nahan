@@ -37,6 +37,35 @@ Nahan is not just a proxy script; it's a complete connection management solution
 
 ## 🚀 Quick Setup Guide
 
+### ⚡ Automated Setup (Recommended)
+
+If you have **Node.js** and **npm** installed, you can deploy everything in one command:
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/itsyebekhe/nahan/main/setup.sh)
+```
+
+Or clone the repo and run it locally:
+
+```bash
+git clone https://github.com/itsyebekhe/nahan.git
+cd nahan
+bash setup.sh
+```
+
+The interactive wizard will:
+- Check and install dependencies (Node.js, npm, Wrangler CLI)
+- Authenticate with your Cloudflare account via SSO
+- Create and bind a D1 database automatically
+- Generate `wrangler.toml` and deploy the worker
+- Output your dashboard URL and first-login credentials
+
+To **uninstall** and fully wipe Nahan from Cloudflare, run the same script and choose option `2`.
+
+---
+
+### 🔧 Manual Setup
+
 Set up your gateway in less than 2 minutes.
 
 ### 1. Create a D1 Database
