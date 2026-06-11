@@ -264,12 +264,63 @@ export default {
                             headers: { "Content-Type": "application/json; charset=utf-8" }
                         });
                     }
-
-                    if (ua.includes(getGamma()) || ua.includes("meta") || ua.includes("sta" + "sh")) {
-                        return new Response(buildYamlProfile(clientHost, targetSub));
+                    const REQ_PER_GB = 6000;
+                    
+                    const usageKey = targetUser?.id
+                        ? targetUser.id.replace(/-/g, '').toLowerCase()
+                        : null;
+                    
+                    const userUsage = usageKey
+                        ? sysUsageCache?.users?.[usageKey]
+                        : null;
+                    
+                    const usedReqs = userUsage?.reqs || 0;
+                    const totalReqs = targetUser?.limitTotalReq || 0;
+                    
+                    const usedBytes = Math.floor(
+                        (usedReqs / REQ_PER_GB) * 1024 * 1024 * 1024
+                    );
+                    
+                    const totalBytes = totalReqs > 0
+                        ? Math.floor(
+                            (totalReqs / REQ_PER_GB) * 1024 * 1024 * 1024
+                          )
+                        : 1125899906842624;
+                    
+                    const expireUnix = targetUser?.expiryMs
+                        ? Math.floor(targetUser.expiryMs / 1000)
+                        : 2147483647;
+                    
+                    const subHeaders = {
+                        "Content-Type": "text/plain; charset=utf-8",
+                    
+                        "Subscription-Userinfo":
+                            `upload=0; download=${usedBytes}; total=${totalBytes}; expire=${expireUnix}`,
+                    
+                        "profile-title":
+                            `ErPyCode | ${targetUser?.name || "User"}`,
+                    
+                        "Content-Disposition":
+                            `attachment; filename="${targetUser?.name || "ErPyCode"}"`,
+                    
+                        "profile-update-interval": "24"
+                    };
+                    if (ua.includes(getGamma()) || ua.includes("meta") || ua.includes("stash")) {
+                        return new Response(
+                            buildYamlProfile(clientHost, targetSub),
+                            {
+                                headers: subHeaders
+                            }
+                        );
                     } else {
                         const raw = buildUriProfile(clientHost, targetSub);
-                        return new Response(btoa(raw));
+                    
+                        return new Response(
+                            btoa(raw),
+                            {
+                                headers: subHeaders
+                            }
+                        );
                     }
                 }
             }
@@ -1411,8 +1462,15 @@ async function processTelemetryStream(env, ctx) {
 
 async function startDataPipe(webSocket, env, ctx) {
     activeConnections++;
-    webSocket.addEventListener('close', () => activeConnections--);
-    webSocket.addEventListener('error', () => activeConnections--);
+    webSocket.addEventListener('close', () => {
+        activeConnections--;
+        releaseClient();
+    });
+    
+    webSocket.addEventListener('error', () => {
+        activeConnections--;
+        releaseClient();
+    });
     let remoteSocket, dataWriter, isInit = true, queue = Promise.resolve();
     let activeClientHash = null;
     webSocket.addEventListener("message", (event) => {
@@ -1442,8 +1500,34 @@ async function startDataPipe(webSocket, env, ctx) {
             if (!validUUIDs.includes(clientHash)) return false; // DROP IF INVALID PROFILE
             
             activeClientHash = clientHash;
+            const user = getAllProfiles().find(
+                    p => p.id.replace(/-/g, '').toLowerCase() === clientHash
+                );
+                
+                const maxConn = user?.maxConnections || 1;
+                
+                const currentTrack = uuidUsage.get(clientHash);
+                
+                if (
+                    currentTrack &&
+                    currentTrack.connects >= maxConn
+                ) {
+                    return false;
+                }
             trackUsage(activeClientHash, 0, env, ctx);
             
+            function releaseClient() {
+                    if (!activeClientHash) return;
+                
+                    const t = uuidUsage.get(activeClientHash);
+                
+                    if (!t) return;
+                
+                    t.connects = Math.max(0, t.connects - 1);
+                
+                    uuidUsage.set(activeClientHash, t);
+                }
+                            
             let uTrack = uuidUsage.get(clientHash) || { connects: 0, last: 0 };
             uTrack.connects++;
             uTrack.last = Date.now();
@@ -3028,6 +3112,19 @@ function getDashboardUI(hasDB) {
                                       <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="limit_days">Expiration limit (Days) - Leave empty for unlimited</label>
                                       <input type="number" id="add-user-days" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
                                   </div>
+                                    <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1"
+                                        data-i18n="limit_devices">
+                                        Device Limit
+                                    </label>
+
+                                    <input
+                                        type="number"
+                                        id="add-user-device-limit"
+                                        min="1"
+                                        value="1"
+                                        class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                    </div>
                                   <div class="flex justify-end gap-2 mt-6">
                                       <button onclick="document.getElementById('modal-add-user').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" data-i18n="btn_cancel">Cancel</button>
                                       <button onclick="commitAddUser()" class="px-4 py-2 rounded-xl bg-primary text-white font-bold" data-i18n="save_btn_user">Save User</button>
@@ -3058,6 +3155,18 @@ function getDashboardUI(hasDB) {
                                       <label class="block text-xs font-bold text-slate-500 mb-1" data-i18n="limit_days">Expiration limit (Days remaining) - Leave empty for unlimited</label>
                                       <input type="number" id="edit-user-days" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
                                   </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1"
+                                                data-i18n="limit_devices"> Device Limit
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value="1"
+                                            id="edit-user-device-limit"
+                                            class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none">
+                                    </div>
                                   <div class="flex justify-end gap-2 mt-6">
                                       <button onclick="document.getElementById('modal-edit-user').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold" data-i18n="btn_cancel">Cancel</button>
                                       <button onclick="commitEditUser()" class="px-4 py-2 rounded-xl bg-primary text-white font-bold" data-i18n="btn_save_changes">Save Changes</button>
@@ -3204,7 +3313,7 @@ function getDashboardUI(hasDB) {
                   tab_users: "Users",
                   user_mgt_title: "User Management", user_mgt_desc: "Manage multiple users, set traffic limits, and expiration dates.", btn_add_user: "+ Add New User",
                   tbl_name: "Name", tbl_uuid: "UUID", tbl_traffic: "Traffic (Used / Limit)", tbl_exp: "Expiration", tbl_action: "Action", no_users: "No users found. Create one above.",
-                  modal_add_title: "Add New User", lbl_u_name: "Name (Required)", lbl_u_gb: "Traffic Limit (GB) - Optional", lbl_u_days: "Duration (Days) - Optional", btn_cancel: "Cancel", btn_confirm: "Add User",
+                  modal_add_title: "Add New User", lbl_u_name: "Name (Required)", lbl_u_gb: "Traffic Limit (GB) - Optional", lbl_u_days: "Duration (Days) - Optional", btn_cancel: "Cancel", btn_confirm: "Add User",limit_devices: "Device Limit",
                   limit_total: "Total Requests Limit (Leave empty for unlimited)", limit_daily: "Daily Requests Limit (Leave empty for unlimited)",
                   limit_days: "Expiration limit (Days) - Leave empty for unlimited", edit_sub: "Edit Subscriber", lbl_name_ph: "Name or UUID",
                   btn_save_changes: "Save Changes", save_btn_user: "Save User", status_active: "Active", status_paused: "Paused", status_expired: "Expired",
@@ -3235,7 +3344,7 @@ function getDashboardUI(hasDB) {
                   tab_users: "کاربران",
                   user_mgt_title: "مدیریت کاربران", user_mgt_desc: "مدیریت کاربران متعدد، تنظیم محدودیت ترافیک، و تاریخ انقضا.", btn_add_user: "+ افزودن کاربر جدید",
                   tbl_name: "نام", tbl_uuid: "شناسه یکتا", tbl_traffic: "ترافیک (مصرفی/محدودیت)", tbl_exp: "انقضا", tbl_action: "عملیات", no_users: "کاربری یافت نشد. از دکمه بالا یک کاربر ایجاد کنید.",
-                  modal_add_title: "افزودن کاربر جدید", lbl_u_name: "نام (الزامی)", lbl_u_gb: "محدودیت ترافیک (گیگابایت) - اختیاری", lbl_u_days: "مدت زمان اعتبار (روز) - اختیاری", btn_cancel: "انصراف", btn_confirm: "افزودن کاربر",
+                  modal_add_title: "افزودن کاربر جدید", lbl_u_name: "نام (الزامی)", lbl_u_gb: "محدودیت ترافیک (گیگابایت) - اختیاری", lbl_u_days: "مدت زمان اعتبار (روز) - اختیاری", btn_cancel: "انصراف", btn_confirm: "افزودن کاربر",limit_devices: "محدودیت دستگاه",
                   save_btn: "ذخیره تنظیمات", msg_saving: "در حال ثبت...", msg_saved: "موفق! در حال بارگذاری...", msg_err: "خطای ارتباط",
                   backup_restore_title: "پشتیبان‌گیری و بازیابی", ping_test_title: "عیب‌یابی تاخیر شبکه", ping_test_desc: "تاخیر پاسخ‌دهی را به آی‌پی تمیز فعال اندازه بگیرید.",
                   lbl_github_repo: "مخزن منبع جهت بروزرسانی", update_avail: "بروزرسانی جدید در دسترس است!", update_btn: "دریافت آخرین کد",
@@ -3923,6 +4032,7 @@ function getDashboardUI(hasDB) {
               const name = document.getElementById('add-user-name').value;
               let tReq = document.getElementById('add-user-total-reqs').value;
               let dReq = document.getElementById('add-user-daily-reqs').value;
+              let deviceLimit = document.getElementById('add-user-device-limit').value;
               let days = document.getElementById('add-user-days').value;
               
               if(!name) {
@@ -3933,6 +4043,7 @@ function getDashboardUI(hasDB) {
               tReq = tReq ? parseInt(tReq) : null;
               dReq = dReq ? parseInt(dReq) : null;
               days = days ? parseInt(days) : null;
+              deviceLimit = deviceLimit ? parseInt(deviceLimit) : 1;
               
               if(!window.nahanConfig) window.nahanConfig = {};
               if(!window.nahanConfig.users) window.nahanConfig.users = [];
@@ -3940,14 +4051,15 @@ function getDashboardUI(hasDB) {
               let newId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
                   .map((b,i) => (i===4||i===6||i===8||i===10?'-':'') + b.toString(16).padStart(2,'0')).join('');
               
-              const u = {
-                  id: newId,
-                  name: name,
-                  limitTotalReq: tReq,
-                  limitDailyReq: dReq,
-                  expiryMs: days ? Date.now() + days*86400000 : null,
-                  createdAt: Date.now()
-              };
+                const u = {
+                id: newId,
+                name: name,
+                limitTotalReq: tReq,
+                limitDailyReq: dReq,
+                expiryMs: days ? Date.now() + days*86400000 : null,
+                maxConnections: deviceLimit,
+                createdAt: Date.now()
+            };
               
               window.nahanConfig.users.push(u);
               document.getElementById('modal-add-user').classList.add('hidden');
@@ -3969,6 +4081,7 @@ function getDashboardUI(hasDB) {
               document.getElementById('edit-user-name').value = u.name;
               document.getElementById('edit-user-total-reqs').value = u.limitTotalReq || '';
               document.getElementById('edit-user-daily-reqs').value = u.limitDailyReq || '';
+              document.getElementById('edit-user-device-limit').value = u.maxConnections || 1;
               
               let daysLeft = '';
               if(u.expiryMs) {
@@ -3986,6 +4099,11 @@ function getDashboardUI(hasDB) {
               let tReq = document.getElementById('edit-user-total-reqs').value;
               let dReq = document.getElementById('edit-user-daily-reqs').value;
               let days = document.getElementById('edit-user-days').value;
+              let deviceLimit =
+                    document.getElementById('edit-user-device-limit').value;
+                    deviceLimit = deviceLimit
+                        ? parseInt(deviceLimit)
+                        : 1;
               
               if(!name) {
                   const enterNameMsg = lang === 'fa' ? 'لطفاً نام را وارد کنید' : 'Please enter a name';
@@ -4004,6 +4122,7 @@ function getDashboardUI(hasDB) {
               u.limitTotalReq = tReq;
               u.limitDailyReq = dReq;
               u.expiryMs = days ? Date.now() + days*86400000 : null;
+              u.maxConnections = deviceLimit;
               
               document.getElementById('modal-edit-user').classList.add('hidden');
               renderUsersTable();
