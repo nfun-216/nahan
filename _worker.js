@@ -25,6 +25,7 @@ const safeBtoa = (str) => {
 };
 
 const SYSTEM_DEFAULTS = {
+    name: "",
     apiRoute: "sync",
     maintenanceHost: "https://www.ubuntu.com, https://www.docker.com",
     backupRelay: "",
@@ -176,7 +177,7 @@ function trackUsage(uuid, bytes, env, ctx) {
                                 ctx?.waitUntil(fetch(`https://api.telegram.org/bot${sysConfig.tgToken}/sendMessage`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ chat_id: notifyChatId, text: tgMsg, parse_mode: 'HTML' })
+                                    body: JSON.stringify({ chat_id: notifyChatId, text: tgMsg, parse_mode: 'Markdown' })
                                 }).catch(()=>{}));
                             }
                         }
@@ -770,8 +771,8 @@ async function sendTelegramMessage(request, type) {
             body: JSON.stringify({
                 chat_id: notifyChatId,
                 text: text,
-                parse_mode: 'HTML',
-                reply_markup: {
+                parse_mode: 'Markdown',
+                reply_markup: /** @type {any} */ ({
                     inline_keyboard: [
                         [{ text: "ورود به پنل 🔐", web_app: { url: panelUrl } }],
                         [
@@ -779,7 +780,7 @@ async function sendTelegramMessage(request, type) {
                             { text: "بروزرسانی مصرف 📊", callback_data: "get_usage" }
                         ]
                     ]
-                }
+                })
             })
         });
     } catch (e) {}
@@ -1482,7 +1483,7 @@ async function handleTelegramWebhook(request, env, hostName, ctx) {
                         chat_id: chatId,
                         message_id: messageId,
                         text: text,
-                        parse_mode: 'HTML',
+                        parse_mode: 'Markdown',
                         reply_markup: replyMarkup
                     })
                 });
@@ -1494,7 +1495,7 @@ async function handleTelegramWebhook(request, env, hostName, ctx) {
                 body: JSON.stringify({
                     chat_id: chatId,
                     text: text,
-                    parse_mode: 'HTML',
+                    parse_mode: 'Markdown',
                     reply_markup: replyMarkup
                 })
             });
@@ -1518,6 +1519,7 @@ async function handleTelegramWebhook(request, env, hostName, ctx) {
                          `👥 **${t("users")}**: ${users.length} (${activeCount} ${t("count_active")}, ${pausedCount} ${t("count_paused")}, ${autoDisabledCount} ${t("count_disabled")})\n` +
                          `━━━━━━━━━━━━━━━━`;
             const panelUrl = isLocal ? `https://${hostName}/${encodeURI(sysConfig.apiRoute)}/dash` : null;
+            /** @type {any} */
             const kb = {
                 inline_keyboard: [
                     [
