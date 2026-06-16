@@ -1240,14 +1240,15 @@ const botI18n = {
         reset_traffic: "🔄 Reset Traffic",
         extend_expiry: "📅 Extend Expiry",
         notes: "📝 Notes",
-        device_limit: "📱 Device Limit",
+        device_limit: "📱 Config Limit",
         msg_enter_search: "🔍 Send a username, UUID, or subscription to search:",
         msg_enter_notes: "📝 Send notes for this user:",
         msg_enter_extend_days: "📅 Enter number of days to extend expiration:",
         msg_traffic_reset: "✅ Traffic has been reset successfully!",
         msg_expiry_extended: "✅ Expiration extended by {days} days!",
         msg_no_disabled: "No disabled users found.",
-        msg_enter_device_limit: "📱 Enter device limit (0 for unlimited):",
+        msg_enter_device_limit: "📱 Enter config limit (0 for unlimited):",
+        config_limit_updated: "✅ Config limit updated!",
         stats_title: "📈 Panel Statistics",
         count_active: "active",
         count_paused: "paused",
@@ -1327,14 +1328,15 @@ const botI18n = {
         reset_traffic: "🔄 بازنشانی ترافیک",
         extend_expiry: "📅 تمدید انقضا",
         notes: "📝 یادداشت‌ها",
-        device_limit: "📱 محدودیت دستگاه",
+        device_limit: "📱 محدودیت کانفیگ",
         msg_enter_search: "🔍 نام کاربری، UUID یا لینک اشتراک را ارسال کنید:",
         msg_enter_notes: "📝 یادداشت برای این کاربر را ارسال کنید:",
         msg_enter_extend_days: "📅 تعداد روزهای تمدید را وارد کنید:",
         msg_traffic_reset: "✅ ترافیک با موفقیت بازنشانی شد!",
         msg_expiry_extended: "✅ انقضا به مدت {days} روز تمدید شد!",
         msg_no_disabled: "هیچ کاربر غیرفعالی یافت نشد.",
-        msg_enter_device_limit: "📱 محدودیت دستگاه را وارد کنید (0 برای نامحدود):",
+        msg_enter_device_limit: "📱 محدودیت تعداد کانفیگ را وارد کنید (0 برای نامحدود):",
+        config_limit_updated: "✅ محدودیت کانفیگ به‌روزرسانی شد!",
         stats_title: "📈 آمار پنل",
         count_active: "فعال",
         count_paused: "متوقف",
@@ -2392,7 +2394,7 @@ async function handleTelegramWebhook(request, env, hostName, ctx) {
                         await d1Put(env, "tg_bot_state", JSON.stringify(tgState));
                         const panelUsers = await getPanelUsers();
                         const detail = getSubDetail(uuid, panelUsers);
-                        await sendOrEdit(chatId, `✅ Device limit updated!`, detail.kb);
+                        await sendOrEdit(chatId, `✅ ${t("config_limit_updated")}`, detail.kb);
                         return new Response("OK", { status: 200 });
                     }
                 }
