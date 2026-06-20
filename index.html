@@ -4,42 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مستندات پیاده‌سازی پنل نهان</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Vazirmatn Persian Font -->
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Vazirmatn', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            light: '#4f46e5',
-                            dark: '#818cf8',
-                        }
-                    }
+                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
+                    colors: { brand: { light: '#4f46e5', dark: '#818cf8' } }
                 }
             }
         }
     </script>
     <style>
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-        }
-        .monospace-font {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            direction: ltr;
-            text-align: left;
-        }
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .monospace-font { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; direction: ltr; text-align: left; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-[#080c14] dark:text-slate-300 antialiased min-h-screen transition-colors duration-300">
 
-    <!-- Header Section -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/80 dark:border-slate-800/80 dark:bg-[#080c14]/80 backdrop-blur-md transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -47,15 +31,11 @@
                 <span class="font-extrabold text-slate-900 dark:text-white tracking-tight text-lg">نهان / مستندات فنی و مصور</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800">v2.5.4.2</span>
             </div>
-            
             <div class="flex items-center gap-3">
-                <!-- Dark/Light Theme Switcher -->
-                <button id="theme-toggle" class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition" aria-label="تغییر پوسته">
-                    <!-- Sun Icon -->
+                <button id="theme-toggle" class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition" aria-label="تغییر پوسته">
                     <svg id="theme-toggle-light-icon" class="hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
-                    <!-- Moon Icon -->
                     <svg id="theme-toggle-dark-icon" class="hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
@@ -65,36 +45,32 @@
         </div>
     </header>
 
-    <!-- Main Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
             
-            <!-- Sticky Sidebar -->
             <aside class="hidden lg:block lg:col-span-3">
                 <div class="sticky top-24 space-y-6">
                     <nav class="space-y-1 text-sm font-medium">
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2">مقدمه</p>
-                        <a href="#intro" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">معرفی و پیش‌نیازها</a>
+                        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2">مقدمه</p>
+                        <a href="#intro" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">معرفی و پیش‌نیازها</a>
                         
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">استقرار سیستم</p>
-                        <a href="#setup" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">مراحل نصب گام‌به‌گام</a>
-                        <a href="#first-login" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">ورود اولیه و امنیت</a>
+                        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">استقرار سیستم</p>
+                        <a href="#setup" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">مراحل نصب گام‌به‌گام</a>
+                        <a href="#first-login" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">ورود اولیه و امنیت</a>
                         
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">پیکربندی هوشمند</p>
-                        <a href="#endpoints" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">تب نقاط اتصال و ساب</a>
-                        <a href="#advanced-settings" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">تب پیشرفته و ویژگی‌ها</a>
-                        <a href="#users" class="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">مدیریت کاربران و انقضا</a>
+                        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">پیکربندی هوشمند</p>
+                        <a href="#endpoints" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">تب نقاط اتصال و ساب</a>
+                        <a href="#advanced-settings" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">تب پیشرفته و ویژگی‌ها</a>
+                        <a href="#users" class="block px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">مدیریت کاربران و انقضا</a>
                         
-                        <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">ابزارهای توسعه‌دهنده</p>
-                        <a href="#obfuscator-section" class="flex items-center gap-2 px-3 py-2 text-slate-800 dark:text-indigo-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-900/50 rounded-lg transition">دریافت و مبهم‌سازی کدهای ورکر</a>
+                        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-4 mb-2">ابزارهای توسعه‌دهنده</p>
+                        <a href="#obfuscator-section" class="block px-3 py-2 text-slate-800 dark:text-indigo-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-900/50 rounded-lg transition">دریافت و مبهم‌سازی کدهای ورکر</a>
                     </nav>
                 </div>
             </aside>
 
-            <!-- Content Area -->
             <main class="col-span-1 lg:col-span-9 space-y-16">
 
-                <!-- Section: Intro -->
                 <section id="intro" class="space-y-4">
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">معرفی پروژه نهان</h2>
                     <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed text-justify">
@@ -102,52 +78,44 @@
                     </p>
                 </section>
 
-                <!-- Section 1: Step by Step Setup -->
                 <section id="setup" class="space-y-12">
                     <div class="border-r-2 border-indigo-500 pr-3">
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">مراحل نصب گام‌به‌گام مصور (Interactive Mockups)</h2>
                     </div>
 
-                    <!-- Phase A: D1 Database -->
                     <div class="space-y-10">
                         <h3 class="text-base sm:text-lg font-extrabold text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-800 pb-2">بخش اول: ساخت پایگاه داده D1 کلودفلر</h3>
                         
-                        <!-- Step A1 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام اول: منوی ناوبری و رفتن به بخش دیتابیس D1</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 در پنل کلودفلر، منوی کناری را باز کرده و ابتدا از شاخه <strong class="text-slate-800 dark:text-slate-200">Storage & databases</strong> گزینه‌ی <strong class="text-indigo-600 dark:text-indigo-400 font-bold">D1 SQLite Database</strong> را انتخاب کنید.
                             </p>
-                            
-                            <!-- Browser Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md transition-colors">
                                 <div class="bg-slate-100 dark:bg-[#111625] px-4 py-2 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
                                     <div class="flex gap-1.5"><span class="w-3 h-3 rounded-full bg-red-400"></span><span class="w-3 h-3 rounded-full bg-yellow-400"></span><span class="w-3 h-3 rounded-full bg-green-400"></span></div>
                                     <span class="text-slate-400 text-[10px] font-mono">dash.cloudflare.com</span><span class="w-4 h-4"></span>
                                 </div>
                                 <div class="flex h-56 font-sans">
-                                    <!-- Sidebar Mock -->
                                     <div class="w-1/2 border-e border-slate-200 dark:border-slate-800 p-3 space-y-2 bg-slate-50 dark:bg-[#0c0f1a]">
                                         <div class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Build</div>
                                         <div class="p-1.5 rounded-lg text-slate-400 flex justify-between items-center text-[11px]"><span>Compute</span><span>▼</span></div>
                                         <div class="p-1.5 rounded-lg text-slate-400 flex justify-between items-center text-[11px] font-bold bg-indigo-500/5 text-indigo-500 dark:text-indigo-400 border border-indigo-500/25"><span>Storage & databases</span><span>▲</span></div>
-                                        <div class="ps-3 text-slate-700 dark:text-slate-300 font-bold text-[10px] flex items-center gap-1.5 relative">
+                                        <div class="ps-3 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center gap-1.5 relative">
                                             <span class="text-orange-500">⚡</span> D1 SQLite Database
                                             <span class="absolute -left-3 text-orange-500 text-sm animate-pulse">&larr;</span>
                                         </div>
                                     </div>
-                                    <div class="w-1/2 p-4 flex items-center justify-center text-slate-400 text-[10px] text-center">بخش پایگاه داده D1 کلودفلر</div>
+                                    <div class="w-1/2 p-4 flex items-center justify-center text-slate-400 text-[11px] text-center">بخش پایگاه داده D1 کلودفلر</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Step A2 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام دوم: ایجاد و ساخت دیتابیس نو</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 در صفحه دیتابیس D1، بر روی دکمه‌ی اختصاصی <strong class="text-slate-800 dark:text-slate-200">Create Database</strong> کلیک نمایید.
                             </p>
-                            <!-- UI Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                                     <h5 class="font-bold text-slate-800 dark:text-white text-sm">D1 Databases</h5>
@@ -163,13 +131,11 @@
                             </div>
                         </div>
 
-                        <!-- Step A3 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام سوم: نام‌گذاری دیتابیس بر مبنای قوانین نام کاربری</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 در فیلد Name نام دیتابیس خود را با حروف کوچک انگلیسی وارد کرده و بر روی کلید آبی رنگ <strong class="text-slate-800 dark:text-slate-200">Create</strong> کلیک کنید.
                             </p>
-                            <!-- Form Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <div>
                                     <label class="block text-slate-500 font-bold mb-1.5">Database Name</label>
@@ -186,17 +152,14 @@
                         </div>
                     </div>
 
-                    <!-- Phase B: Worker Deployment -->
                     <div class="space-y-10 pt-8">
                         <h3 class="text-base sm:text-lg font-extrabold text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-800 pb-2">بخش دوم: ساخت نرم‌افزار لبه (Worker)</h3>
 
-                        <!-- Step B1 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام اول: ساخت اپلیکیشن ورکر جدید</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 از منوی کناری به بخش <strong class="text-slate-800 dark:text-slate-200">Compute -> Workers & Pages</strong> رفته و روی دکمه‌ی آبی رنگ <strong class="text-slate-800 dark:text-slate-200">Create application</strong> کلیک کنید.
                             </p>
-                            <!-- UI Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
                                     <span class="font-bold text-slate-800 dark:text-white text-sm">Workers & Pages</span>
@@ -205,17 +168,15 @@
                                         <span class="absolute -left-6 text-orange-500 text-sm animate-pulse">&larr;</span>
                                     </button>
                                 </div>
-                                <p class="text-slate-400 text-[10px]">Build & deploy serverless functions, sites, and full-stack applications.</p>
+                                <p class="text-slate-400 text-[11px]">Build & deploy serverless functions, sites, and full-stack applications.</p>
                             </div>
                         </div>
 
-                        <!-- Step B2 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام دوم: انتخاب قالب پایه و دپلو اولیه</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 بر روی دکمه‌ی قالب پیش‌فرض یعنی <strong class="text-slate-800 dark:text-slate-200">Start with Hello World!</strong> کلیک نمایید. در مرحله بعد نام ورکر را تعیین نموده و روی دکمه آبی رنگ <strong class="text-slate-800 dark:text-slate-200">Deploy</strong> کلیک کنید.
                             </p>
-                            <!-- Template Selection Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ship something new</div>
                                 <div class="space-y-2 font-medium">
@@ -230,17 +191,14 @@
                         </div>
                     </div>
 
-                    <!-- Phase C: Bindings -->
                     <div class="space-y-10 pt-8">
                         <h3 class="text-base sm:text-lg font-extrabold text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-800 pb-2">بخش سوم: اتصال (Bind) پایگاه داده به Worker</h3>
 
-                        <!-- Step C1 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام اول: ورود به بخش تنظیمات Bindings ورکر</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 پس از اتمام دپلو اولیه، در داشبورد ورکر خود وارد زبانه <strong class="text-slate-800 dark:text-slate-200">Settings</strong> و زیرمنوی <strong class="text-slate-800 dark:text-slate-200">Bindings</strong> شده، و بر روی کلید <strong class="text-slate-800 dark:text-slate-200">Add binding</strong> کلیک نمایید.
                             </p>
-                            <!-- Tab Bar Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <div class="flex space-x-reverse space-x-4 border-b border-slate-100 dark:border-slate-800 pb-2 text-[11px] font-bold text-slate-400">
                                     <span>Overview</span><span>Metrics</span><span>Deployments</span>
@@ -255,20 +213,18 @@
                             </div>
                         </div>
 
-                        <!-- Step C2 -->
                         <div class="space-y-4">
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white">گام دوم: تعریف متغیر IOT_DB و پیوند دیتابیس D1</h4>
                             <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
                                 از منوی کشویی نوع بایندینگ را بر روی گزینه <strong class="text-slate-800 dark:text-slate-200">D1 database</strong> قرار داده و فیلدها را مطابق ماکاپ زیر پر کرده و روی دکمه‌ی آبی رنگ <strong class="text-slate-800 dark:text-slate-200">Add Binding</strong> کلیک نمایید.
                             </p>
-                            <!-- Binding Modal Mockup -->
                             <div class="border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-950 overflow-hidden text-xs max-w-md shadow-md p-6 space-y-4 transition-colors">
                                 <h5 class="text-sm font-bold text-slate-800 dark:text-white mb-2">Add a D1 database binding</h5>
                                 <div class="space-y-3">
                                     <div>
-                                        <label class="block text-slate-500 font-bold mb-1">Variable name <span class="text-slate-400 font-normal">(برای کپی روی فیلد زیر کلیک کنید)</span></label>
-                                        <span onclick="copyText('IOT_DB')" class="monospace-font text-indigo-600 dark:text-indigo-400 font-bold block bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer px-3 py-1.5 rounded border border-slate-200 dark:border-slate-850 w-fit transition-colors" title="کلیک برای کپی">IOT_DB</span>
-                                        <p class="text-[10px] text-slate-400 mt-1">The name used to refer to this binding.</p>
+                                        <label class="block text-slate-500 font-bold mb-1">Variable Name <span class="text-slate-400 font-normal">(برای کپی روی فیلد زیر کلیک کنید)</span></label>
+                                        <span id="copy-iot-db" class="monospace-font text-indigo-600 dark:text-indigo-400 font-bold block bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer px-3 py-1.5 rounded border border-slate-200 dark:border-slate-800 w-fit transition-colors" title="کلیک برای کپی">IOT_DB</span>
+                                        <p class="text-[11px] text-slate-400 mt-1">The name used to refer to this binding.</p>
                                     </div>
                                     <div>
                                         <label class="block text-slate-500 font-bold mb-1">D1 database</label>
@@ -287,51 +243,40 @@
                     </div>
                 </section>
 
-                <!-- Section 2: First Login -->
                 <section id="first-login" class="space-y-4">
                     <div class="border-r-2 border-indigo-500 pr-3">
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">ورود اولیه به سیستم و امنیت</h2>
                     </div>
                     <div class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm space-y-3 leading-relaxed text-justify">
-                        <p>
-                            پس از جایگذاری کدهای اصلی در ادیتور آنلاین و دپلو کردن، برای ورود به پنل باید عبارت زیر را به انتهای آدرس دامنه‌ی ورکر خود اضافه کنید:
-                        </p>
+                        <p>پس از جایگذاری کدهای اصلی در ادیتور آنلاین و دپلو کردن، برای ورود به پنل باید عبارت زیر را به انتهای آدرس دامنه‌ی ورکر خود اضافه کنید:</p>
                         <div class="p-3 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs sm:text-sm monospace-font border border-slate-200 dark:border-slate-800 w-fit">
                             /sync/dash
                         </div>
                         <p>
-                            کلمه عبور اولیه برای ورود به پنل، عبارت <code onclick="copyText('admin')" class="monospace-font text-pink-600 dark:text-pink-400 font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-850 transition-colors" title="کلیک برای کپی">admin</code> با حروف کوچک است که باید بلافاصله پس از اولین ورود موفقیت‌آمیز، جهت امنیت از تنظیمات پنل تغییر داده شود.
+                            کلمه عبور اولیه برای ورود به پنل، عبارت <code id="copy-admin" class="monospace-font text-pink-600 dark:text-pink-400 font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800 transition-colors" title="کلیک برای کپی">admin</code> با حروف کوچک است که باید بلافاصله پس از اولین ورود موفقیت‌آمیز، جهت امنیت از تنظیمات پنل تغییر داده شود.
                         </p>
                     </div>
                 </section>
 
-                <!-- Section 3: Endpoints -->
                 <section id="endpoints" class="space-y-4">
                     <div class="border-r-2 border-indigo-500 pr-3">
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">تب نقاط اتصال و اشتراک هوشمند</h2>
                     </div>
                     <div class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm space-y-4 leading-relaxed text-justify">
-                        <p>
-                            سربرگ نقاط اتصال حاوی اطلاعات اتصالات و آدرس‌های ساب‌اسکریپشن هر مشترک است. در نسخه‌های جدیدتر، قالب‌های مجزای قدیمی آلفا، بتا و گاما حذف شده و همگی در **یک لینک اشتراک همگانی واحد (Universal Sync URL)** ادغام شده‌اند.
-                        </p>
+                        <p>سربرگ نقاط اتصال حاوی اطلاعات اتصالات و آدرس‌های ساب‌اسکریپشن هر مشترک است. در نسخه‌های جدیدتر، قالب‌های مجزای قدیمی آلفا، بتا و گاما حذف شده و همگی در یک لینک اشتراک همگانی واحد (Universal Sync URL) ادغام شده‌اند.</p>
                         <div class="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl space-y-2">
                             <strong class="text-slate-900 dark:text-indigo-300 block text-xs">🌍 قابلیت تشخیص هوشمند کلاینت:</strong>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">
-                                این لینک ساب هوشمند، کلاینت متصل شده (نظیر Clash، Sing-Box، Shadowrocket و غیره) را از روی امضای مرورگر تشخیص داده و کدهای متناسب با هسته آن نرم‌افزار را صادر می‌کند.
-                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">این لینک ساب هوشمند، کلاینت متصل شده (نظیر Clash، Sing-Box، Shadowrocket و غیره) را از روی امضای مرورگر تشخیص داده و کدهای متناسب با هسته آن نرم‌افزار را صادر می‌کند.</p>
                         </div>
                     </div>
                 </section>
 
-                <!-- Section 4: Advanced Settings -->
                 <section id="advanced-settings" class="space-y-4">
                     <div class="border-r-2 border-indigo-500 pr-3">
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">تنظیمات پیشرفته و قابلیت‌های کلاستر</h2>
                     </div>
                     <div class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm space-y-4 leading-relaxed text-justify">
-                        <p>
-                            در تب تنظیمات پیشرفته، متغیرهای متعددی جهت شخصی‌سازی رفتارهای لایه عبور شبکه طراحی شده است:
-                        </p>
+                        <p>در تب تنظیمات پیشرفته، متغیرهای متعددی جهت شخصی‌سازی رفتارهای لایه عبور شبکه طراحی شده است:</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                             <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                                 <strong class="text-slate-900 dark:text-slate-200">نودهای موازی (Slave Nodes):</strong>
@@ -345,7 +290,7 @@
                                 <strong class="text-slate-900 dark:text-slate-200">بهینه‌سازهای TCP Fast Open و ECH:</strong>
                                 <p class="text-slate-500">افزایش سرعت هندشیک اولیه و پنهان‌سازی اطلاعات SNI ارسالی به مقصد کلودفلر.</p>
                             </div>
-                            <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-285 space-y-1">
+                            <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                                 <strong class="text-slate-900 dark:text-slate-200">یکپارچه‌سازی ربات تلگرام:</strong>
                                 <p class="text-slate-500">قابلیت اتصال ربات اختصاصی جهت کنترل مصرف، جستجوی کاربران و مانیتورینگ پنل.</p>
                             </div>
@@ -353,22 +298,16 @@
                     </div>
                 </section>
 
-                <!-- Section 5: User Management -->
                 <section id="users" class="space-y-4">
                     <div class="border-r-2 border-indigo-500 pr-3">
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">مدیریت کاربران و قطع خودکار</h2>
                     </div>
                     <div class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm space-y-3 leading-relaxed text-justify">
-                        <p>
-                            یکی از کاربردی‌ترین قابلیت‌های ارائه‌شده در نسخه ۲.۵.۴.۲، سیستم **توقف اتوماتیک حساب‌های مصرفی و منقضی‌شده (Auto-Disable)** است. 
-                        </p>
-                        <p>
-                            زمانی که ترافیک کلی مصرف‌شده یک کاربر از سقف مجاز فراتر رود یا انقضای زمانی وی به اتمام برسد، پایگاه داده SQLite D1 بلافاصله وضعیت آن کاربر را به صورت خودکار به حالت غیرفعال تغییر می‌دهد تا از بار اضافی ترافیکی ورکر جلوگیری شود.
-                        </p>
+                        <p>یکی از کاربردی‌ترین قابلیت‌های ارائه‌شده در نسخه ۲.۵.۴.۲، سیستم توقف اتوماتیک حساب‌های مصرفی و منقضی‌شده (Auto-Disable) است.</p>
+                        <p>زمانی که ترافیک کلی مصرف‌شده یک کاربر از سقف مجاز فراتر رود یا انقضای زمانی وی به اتمام برسد، پایگاه داده SQLite D1 بلافاصله وضعیت آن کاربر را به صورت خودکار به حالت غیرفعال تغییر می‌دهد تا از بار اضافی ترافیکی ورکر جلوگیری شود.</p>
                     </div>
                 </section>
 
-                <!-- Section 6: Interactive Developer Tool (Obfuscator & Fetch Code) -->
                 <section id="obfuscator-section" class="space-y-6 pt-6 border-t border-slate-200 dark:border-slate-800">
                     <div class="space-y-2">
                         <h2 class="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">ابزار اختصاصی دریافت و مبهم‌سازی کدهای ورکر</h2>
@@ -377,55 +316,46 @@
                         </p>
                     </div>
 
-                    <!-- Interactive Area -->
                     <div class="space-y-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <div class="flex flex-wrap gap-2 mb-2">
-                            <button onclick="fetchOriginalCode()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                            <button id="fetch-code-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                 دریافت زنده کدهای اصلی از گیت‌هاب
                             </button>
                         </div>
 
-                        <!-- Code Editors Side by Side with Fully Automatic Obfuscation -->
                         <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
-                            <!-- Input Panel (RTL code input) -->
                             <div class="md:col-span-5 space-y-1.5">
                                 <div class="flex justify-between items-center text-xs text-slate-500 font-bold px-1">
                                     <span>سورس کد اصلی ورکر (_worker.js)</span>
-                                    <button onclick="copyToClipboard('original-code-area')" class="text-indigo-500 hover:text-indigo-600">کپی کد</button>
+                                    <button id="copy-original-btn" class="text-indigo-500 hover:text-indigo-600 transition-colors">کپی کد</button>
                                 </div>
-                                <textarea id="original-code-area" placeholder="کدهای ورکر را اینجا پیست کنید یا دکمه دریافت زنده را بزنید..." class="w-full h-80 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-xl font-mono text-xs text-slate-700 dark:text-slate-300 focus:border-indigo-500 outline-none resize-none"></textarea>
+                                <textarea id="original-code-area" placeholder="کدهای ورکر را اینجا پیست کنید یا دکمه دریافت زنده را بزنید..." class="w-full h-80 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-xl font-mono text-xs text-slate-700 dark:text-slate-300 focus:border-indigo-500 outline-none resize-none transition-colors"></textarea>
                             </div>
 
-                            <!-- Flow / Indicator Connection -->
                             <div class="md:col-span-1 flex flex-col items-center justify-center py-2 md:py-0">
                                 <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 select-none animate-pulse">
-                                    <!-- Dynamic Flow Arrow -->
                                     <svg class="w-5 h-5 hidden md:block rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                     <svg class="w-5 h-5 block md:hidden rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </div>
-                                <span class="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest hidden md:block">Auto Encrypt</span>
+                                <span class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest hidden md:block">Auto Encrypt</span>
                             </div>
 
-                            <!-- Output Panel -->
                             <div class="md:col-span-5 space-y-1.5">
                                 <div class="flex justify-between items-center text-xs text-slate-500 font-bold px-1">
                                     <span>کدهای خروجی مبهم‌سازی شده (تضمینی کلودفلر)</span>
                                     <div class="flex gap-2">
-                                        <button onclick="copyToClipboard('obfuscated-code-area')" class="text-emerald-500 hover:text-emerald-600">کپی کد</button>
-                                        <button onclick="downloadObfuscated()" class="text-indigo-500 hover:text-indigo-600">دانلود فایل</button>
+                                        <button id="copy-obfuscated-btn" class="text-emerald-500 hover:text-emerald-600 transition-colors">کپی کد</button>
+                                        <button id="download-obfuscated-btn" class="text-indigo-500 hover:text-indigo-600 transition-colors">دانلود فایل</button>
                                     </div>
                                 </div>
-                                <textarea id="obfuscated-code-area" readonly placeholder="کد مبهم‌سازی شده به صورت خودکار و آنی اینجا لود می‌شود..." class="w-full h-80 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-xl font-mono text-xs text-slate-700 dark:text-slate-300 focus:border-indigo-500 outline-none resize-none"></textarea>
+                                <textarea id="obfuscated-code-area" readonly placeholder="کد مبهم‌سازی شده به صورت خودکار و آنی اینجا لود می‌شود..." class="w-full h-80 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-xl font-mono text-xs text-slate-700 dark:text-slate-300 focus:border-indigo-500 outline-none resize-none transition-colors"></textarea>
                             </div>
                         </div>
 
-                        <!-- Educational Banner on Obfuscation -->
-                        <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-250 dark:border-slate-850 text-xs text-slate-500 dark:text-slate-400 space-y-2 leading-relaxed">
+                        <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 space-y-2 leading-relaxed">
                             <h4 class="font-bold text-slate-700 dark:text-slate-300">💡 مکانیزم فنی مبهم‌سازی ماژولار و بایت‌شفتینگ چطور کار می‌کند؟</h4>
-                            <p>
-                                این ابزار ابتدا به طور خودکار دستورات استاتیک `import` را در هر ورکری شناسایی و پیوندهای خروجی آن‌ها (Bindings) را استخراج می‌کند. ایمپورت‌ها به بالای ساختار لودر نهایی منتقل می‌شوند و پیوندها به عنوان پارامتر ورودی به بدنه رمزگشایی صادر می‌گردند. سورس‌کد با موتور بومی مرورگر (`TextEncoder`) به آرایه‌ای از بایت‌های خام UTF-8 تبدیل شده و پس از اعمال شیفت کلید تصادفی XOR، به صورت هگزادسیمال بسته‌بندی می‌شود. در نهایت گیت‌وی با کلاس استاندارد `TextDecoder` بایت‌ها را بدون هیچ‌گونه به هم ریختگی به کدهای اصلی بازمی‌گرداند و به کمک `new Function` اجرا می‌کند. همچنین، برای رفع تداخل با ساختار متغیرهای خارج از ماژول، ساختار `export default` در انتهای پردازش به انتهای بدنه اصلی الحاق (Append) می‌شود تا از وقوع ReferenceError جلوگیری شود.
-                            </p>
+                            <p>این ابزار ابتدا به طور خودکار دستورات استاتیک `import` را در هر ورکری شناسایی و پیوندهای خروجی آن‌ها (Bindings) را استخراج می‌کند. ایمپورت‌ها به بالای ساختار لودر نهایی منتقل می‌شوند و پیوندها به عنوان پارامتر ورودی به بدنه رمزگشایی صادر می‌گردند. سورس‌کد با موتور بومی مرورگر (`TextEncoder`) به آرایه‌ای از بایت‌های خام UTF-8 تبدیل شده و پس از اعمال شیفت کلید تصادفی XOR، به صورت Base64 بسته‌بندی می‌شود. در نهایت گیت‌وی با کلاس استاندارد `TextDecoder` بایت‌ها را بدون هیچ‌گونه به هم ریختگی به کدهای اصلی بازمی‌گرداند و به کمک `new Function` اجرا می‌کند. همچنین، برای رفع تداخل با ساختار متغیرهای خارج از ماژول، ساختار `export default` در انتهای پردازش به انتهای بدنه اصلی الحاق (Append) می‌شود تا از وقوع ReferenceError جلوگیری شود.</p>
                         </div>
                     </div>
                 </section>
@@ -434,225 +364,189 @@
         </div>
     </div>
 
-    <!-- Toast Success Notification -->
-    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs shadow-xl opacity-0 transition-opacity duration-350 pointer-events-none font-bold">
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none font-bold">
         با موفقیت انجام شد!
     </div>
 
     <script>
-        // Light/Dark Theme Switcher Logic
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        (function() {
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+            const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            themeToggleLightIcon.classList.remove('hidden');
-        } else {
-            document.documentElement.classList.remove('dark');
-            themeToggleDarkIcon.classList.remove('hidden');
-        }
-
-        themeToggleBtn.addEventListener('click', function() {
-            themeToggleDarkIcon.classList.toggle('hidden');
-            themeToggleLightIcon.classList.toggle('hidden');
-
-            if (localStorage.getItem('color-theme')) {
-                if (localStorage.getItem('color-theme') === 'light') {
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
+                    themeToggleLightIcon.classList.remove('hidden');
+                    themeToggleDarkIcon.classList.add('hidden');
                 } else {
                     document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
+                    themeToggleLightIcon.classList.add('hidden');
+                    themeToggleDarkIcon.classList.remove('hidden');
                 }
-            } else {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                }
-            }
-        });
+            };
 
-        // Click-to-copy utility
-        function copyText(text) {
-            navigator.clipboard.writeText(text);
-            showToast("کپی شد: " + text);
-        }
+            const currentTheme = localStorage.getItem('color-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(currentTheme);
 
-        // Fetch Live Code from GitHub API
-        async function fetchOriginalCode() {
-            const textarea = document.getElementById('original-code-area');
-            textarea.value = "در حال ارتباط با سرورهای گیت‌هاب و دریافت کدهای اصلی پروژه نهان...";
-            try {
-                const res = await fetch('https://raw.githubusercontent.com/itsyebekhe/nahan/refs/heads/main/_worker.js');
-                if (res.ok) {
-                    const code = await res.text();
-                    textarea.value = code;
-                    obfuscateSourceCode(); // Auto-obfuscate after fetching
-                    showToast("کدهای ورکر دریافت و مبهم‌سازی شدند!");
-                } else {
-                    textarea.value = "خطا در برقراری ارتباط با گیت‌هاب. لطفاً چند لحظه دیگر امتحان کرده یا کدها را دستی پیست کنید.";
-                }
-            } catch(e) {
-                textarea.value = "خطای اتصال به شبکه. لطفاً پروکسی یا اینترنت خود را بررسی نمایید.";
-            }
-        }
+            themeToggleBtn.addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                localStorage.setItem('color-theme', newTheme);
+                applyTheme(newTheme);
+            });
 
-        // Parse static import bindings from any JS Module code
-        function parseImportBindings(importStr) {
-            const cleanStr = importStr.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
-            const content = cleanStr
-                .replace(/^import\s+/, '')
-                .replace(/\s+from\s+["'].*?["'];?$/, '')
-                .trim();
-            
-            const bindings = [];
-            
-            if (content.startsWith('*')) {
-                const match = content.match(/\*\s+as\s+(\w+)/);
-                if (match) bindings.push({ name: match[1], isNamespace: true });
-                return bindings;
-            }
-            
-            const braceStart = content.indexOf('{');
-            if (braceStart !== -1) {
-                const defaultPart = content.slice(0, braceStart).replace(/,/, '').trim();
-                if (defaultPart) {
-                    bindings.push({ name: defaultPart, isDefault: true });
-                }
-                const bracePart = content.slice(braceStart + 1, content.lastIndexOf('}')).trim();
-                const namedImports = bracePart.split(',').map(s => s.trim()).filter(Boolean);
-                namedImports.forEach(item => {
-                    if (item.includes(' as ')) {
-                        const parts = item.split(/\s+as\s+/);
-                        bindings.push({ name: parts[1], original: parts[0] });
+            const showToast = (msg) => {
+                const toast = document.getElementById('toast');
+                toast.innerText = msg;
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+            };
+
+            const copyToClipboard = (text) => {
+                navigator.clipboard.writeText(text).then(() => showToast("کپی شد: " + text)).catch(() => showToast("خطا در کپی!"));
+            };
+
+            document.getElementById('copy-iot-db').addEventListener('click', () => copyToClipboard('IOT_DB'));
+            document.getElementById('copy-admin').addEventListener('click', () => copyToClipboard('admin'));
+
+            const originalCodeArea = document.getElementById('original-code-area');
+            const obfuscatedCodeArea = document.getElementById('obfuscated-code-area');
+            const fetchCodeBtn = document.getElementById('fetch-code-btn');
+            const copyOriginalBtn = document.getElementById('copy-original-btn');
+            const copyObfuscatedBtn = document.getElementById('copy-obfuscated-btn');
+            const downloadObfuscatedBtn = document.getElementById('download-obfuscated-btn');
+
+            fetchCodeBtn.addEventListener('click', async () => {
+                originalCodeArea.value = "در حال ارتباط با سرورهای گیت‌هاب...";
+                try {
+                    const res = await fetch('https://raw.githubusercontent.com/itsyebekhe/nahan/refs/heads/main/_worker.js');
+                    if (res.ok) {
+                        originalCodeArea.value = await res.text();
+                        obfuscateSourceCode();
+                        showToast("کدهای ورکر دریافت و مبهم‌سازی شدند!");
                     } else {
-                        bindings.push({ name: item });
+                        originalCodeArea.value = "خطا در برقراری ارتباط با گیت‌هاب. لطفاً کدها را دستی پیست کنید.";
                     }
-                });
-            } else {
-                bindings.push({ name: content, isDefault: true });
-            }
-            
-            return bindings;
-        }
-
-        // Custom Unique UTF-8 Byte XOR compiler supporting ANY Cloudflare Module code
-        function obfuscateSourceCode() {
-            const srcText = document.getElementById('original-code-area').value;
-            const outputArea = document.getElementById('obfuscated-code-area');
-            
-            if(!srcText || srcText.trim().length === 0 || srcText.startsWith("کدهای ورکر را اینجا") || srcText.startsWith("در حال ارتباط با سرورهای")) {
-                outputArea.value = "";
-                return;
-            }
-
-            try {
-                // 1. Extract all import statements dynamically
-                const importRegex = /import\s+[\s\S]*?from\s+["'].*?["'];?/g;
-                const imports = [];
-                let match;
-                
-                while ((match = importRegex.exec(srcText)) !== null) {
-                    imports.push(match[0]);
+                } catch (e) {
+                    originalCodeArea.value = "خطای اتصال به شبکه. لطفاً پروکسی یا اینترنت خود را بررسی نمایید.";
                 }
+            });
+
+            const parseImportBindings = (importStr) => {
+                const content = importStr.replace(/^import\s+/, '').replace(/\s+from\s+["'].*?["'];?$/, '').trim();
+                const bindings = new Set();
                 
-                // 2. Strip imports from the payload
-                let cleanCode = srcText.replace(importRegex, '');
-                
-                // 3. Parse all bindings from the extracted imports to pass them to new Function
-                const bindings = [];
-                imports.forEach(imp => {
-                    const parsed = parseImportBindings(imp);
-                    bindings.push(...parsed);
+                const cleanContent = content.replace(/[{}]/g, ' ').replace(/\s+as\s+/g, ' ').replace(/,/g, ' ');
+                cleanContent.split(/\s+/).forEach(item => {
+                    if (item && item !== '*') bindings.add(item);
                 });
                 
-                // Deduplicate bindings by name
-                const uniqueBindings = [];
-                const seenNames = new Set();
-                bindings.forEach(b => {
-                    if (!seenNames.has(b.name)) {
-                        seenNames.add(b.name);
-                        uniqueBindings.push(b);
+                return Array.from(bindings);
+            };
+
+            const obfuscateSourceCode = () => {
+                const srcText = originalCodeArea.value;
+                
+                if (!srcText || !srcText.trim() || srcText.startsWith("کدهای ورکر را اینجا") || srcText.startsWith("در حال ارتباط با سرورهای")) {
+                    obfuscatedCodeArea.value = "";
+                    return;
+                }
+
+                try {
+                    const importRegex = /^import\s+[\s\S]*?from\s+["'].*?["'];?$/gm;
+                    const imports = [];
+                    let match;
+                    
+                    while ((match = importRegex.exec(srcText)) !== null) {
+                        imports.push(match[0].trim());
                     }
-                });
-                
-                // 4. Change export default to a temporary variable assignment instead of immediate return
-                cleanCode = cleanCode.replace(/export\s+default\s+/g, 'const _0xNahanModule = ');
-                cleanCode += '\nreturn _0xNahanModule;';
-                
-                // 5. Generate random XOR key
-                const randKey = Math.floor(Math.random() * 80) + 64; 
-                
-                // 6. Encode directly to UTF-8 Byte Array first (prevents Unicode char crashes)
-                const encoder = new TextEncoder();
-                const bytes = encoder.encode(cleanCode);
-                
-                // 7. Convert bytes to hex blocks (always 2 characters)
-                let hexOutput = '';
-                for (let i = 0; i < bytes.length; i++) {
-                    const xorByte = bytes[i] ^ randKey;
-                    hexOutput += xorByte.toString(16).padStart(2, '0');
+                    
+                    let cleanCode = srcText.replace(importRegex, '').trim();
+                    
+                    const bindingNames = new Set();
+                    imports.forEach(imp => {
+                        parseImportBindings(imp).forEach(b => bindingNames.add(b));
+                    });
+                    const bindingsArr = Array.from(bindingNames);
+                    
+                    if (cleanCode.includes('export default')) {
+                        cleanCode = cleanCode.replace(/export\s+default\s+/, 'const _0xNahanModule = ');
+                        cleanCode += '\nreturn _0xNahanModule;';
+                    } else {
+                        cleanCode += '\nreturn undefined;';
+                    }
+                    
+                    const encoder = new TextEncoder();
+                    const bytes = encoder.encode(cleanCode);
+                    const keyBytes = new Uint8Array(16);
+                    crypto.getRandomValues(keyBytes);
+                    
+                    const xoredBytes = new Uint8Array(bytes.length);
+                    for (let i = 0; i < bytes.length; i++) {
+                        xoredBytes[i] = bytes[i] ^ keyBytes[i % keyBytes.length];
+                    }
+                    
+                    let binaryString = '';
+                    const chunkSize = 0x8000;
+                    for (let i = 0; i < xoredBytes.length; i += chunkSize) {
+                        binaryString += String.fromCharCode.apply(null, xoredBytes.subarray(i, i + chunkSize));
+                    }
+                    const b64Payload = btoa(binaryString);
+                    const keyHex = Array.from(keyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    const rawImportsStr = imports.join('\n');
+                    const bindingParams = bindingsArr.map(n => `"${n}"`).join(', ');
+                    const bindingArgs = bindingsArr.join(', ');
+                    
+                    const finalLoaderCode = `${rawImportsStr}
+
+const _0xPayload = "${b64Payload}";
+const _0xKeyHex = "${keyHex}";
+const _0xKey = _0xKeyHex.match(/.{1,2}/g).map(h => parseInt(h, 16));
+const _0xRaw = atob(_0xPayload);
+const _0xBytes = new Uint8Array(_0xRaw.length);
+for (let i = 0; i < _0xRaw.length; i++) {
+    _0xBytes[i] = _0xRaw.charCodeAt(i) ^ _0xKey[i % _0xKey.length];
+}
+const _0xCode = new TextDecoder().decode(_0xBytes);
+const _0xRuntime = new Function(${bindingParams}, _0xCode)(${bindingArgs});
+
+export default _0xRuntime;`;
+
+                    obfuscatedCodeArea.value = finalLoaderCode;
+                } catch (err) {
+                    obfuscatedCodeArea.value = "خطایی در پردازش کدها رخ داد: " + err.message;
                 }
-                
-                // 8. Reconstruct loader code with top-level imports and passed variables
-                const rawImportsStr = imports.join('\n');
-                const bindingNames = uniqueBindings.map(b => b.name);
-                
-                const finalLoaderCode = `${rawImportsStr}
+            };
 
-// Nahan Gateway - Obfuscated Loader Context (v2.5.4.2 Optimized)
-const _0xNahanPayload = "${hexOutput}";
-const _0xNahanKey = ${randKey};
+            let debounceTimer;
+            originalCodeArea.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(obfuscateSourceCode, 400);
+            });
 
-const _0xNahanBytes = new Uint8Array((_0xNahanPayload.match(/.{1,2}/g) || []).map(x => parseInt(x, 16) ^ _0xNahanKey));
-const _0xNahanCode = new TextDecoder().decode(_0xNahanBytes);
-const _0xNahanRuntime = new Function(${bindingNames.map(name => `"${name}"`).join(', ')}, _0xNahanCode)(${bindingNames.join(', ')});
+            copyOriginalBtn.addEventListener('click', () => {
+                if (originalCodeArea.value) copyToClipboard(originalCodeArea.value);
+            });
 
-export default _0xNahanRuntime;`;
+            copyObfuscatedBtn.addEventListener('click', () => {
+                if (obfuscatedCodeArea.value) copyToClipboard(obfuscatedCodeArea.value);
+            });
 
-                outputArea.value = finalLoaderCode;
-            } catch(err) {
-                outputArea.value = "خطایی در ساخت کدهای مبهم‌سازی شده رخ داد: " + err.message;
-            }
-        }
-
-        // Auto-obfuscate on textarea input
-        document.getElementById('original-code-area').addEventListener('input', obfuscateSourceCode);
-
-        // Helper: copy function
-        function copyToClipboard(id) {
-            const textarea = document.getElementById(id);
-            if(!textarea.value || textarea.value.trim().length === 0) return;
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value);
-            showToast("کپی با موفقیت انجام شد!");
-        }
-
-        // Helper: download function
-        function downloadObfuscated() {
-            const text = document.getElementById('obfuscated-code-area').value;
-            if(!text || text.trim().length === 0) return;
-            
-            const element = document.createElement('a');
-            element.setAttribute('href', 'data:text/javascript;charset=utf-8,' + encodeURIComponent(text));
-            element.setAttribute('download', '_worker.js');
-            element.style.display = 'none';
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }
-
-        // Helper: toast notifications
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.opacity = '1';
-            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
-        }
+            downloadObfuscatedBtn.addEventListener('click', () => {
+                const text = obfuscatedCodeArea.value;
+                if (!text) return;
+                const blob = new Blob([text], { type: 'text/javascript;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '_worker.js';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        })();
     </script>
 </body>
 </html>
