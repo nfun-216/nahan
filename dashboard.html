@@ -1012,7 +1012,7 @@ proxyip.cmliussss.net" class="w-full px-4 py-3 rounded-xl border border-slate-20
                                           <div class="space-y-1">
                                               <label class="block text-sm font-bold text-slate-600 dark:text-slate-300" data-i18n="lbl_prefix">Custom Name Prefix</label>
                                               <input type="text" id="cfg-name-prefix" placeholder="Core" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-slate-800 focus:border-primary outline-none text-sm">
-                                              <p class="text-[11px] text-slate-400 mt-1" data-i18n="desc_prefix_note">This prefix is injected where the <code class="bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono">{PREFIX}</code> tag is used in your naming strategy.</p>
+                                              <p class="text-[11px] text-slate-400 mt-1" data-i18n="html_desc_prefix_note">This prefix is injected where the <code class="bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono">{PREFIX}</code> tag is used in your naming strategy.</p>
                                           </div>
                                        </div>
                                        <div class="border-t border-slate-100 dark:border-darkborder pt-4">
@@ -1906,7 +1906,7 @@ proxyip.cmliussss.net" class="w-full px-4 py-3 rounded-xl border border-slate-20
                     lbl_auto_update: "Auto-Update", desc_auto_update: "Automatically deploy when a new version is detected",
                     lbl_auto_update_format: "Update Format", format_normal_label: "Normal", format_obfuscated_label: "Obfuscated",
                     desc_format_normal: "Standard _worker.js", desc_format_obfuscated: "XOR byte-shifting",
-                    lbl_prefix: "Custom Name Prefix", desc_prefix_note: "This prefix is injected where the <code class='bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono'>{PREFIX}</code> tag is used in your naming strategy.", lbl_clean_ips: "Clean IPs", lbl_proxy_ips: "Proxy IPs", lbl_assigned_nodes: "Assigned Nodes",
+                    lbl_prefix: "Custom Name Prefix", html_desc_prefix_note: "This prefix is injected where the <code class='bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono'>{PREFIX}</code> tag is used in your naming strategy.", lbl_clean_ips: "Clean IPs", lbl_proxy_ips: "Proxy IPs", lbl_assigned_nodes: "Assigned Nodes",
                     lbl_protocol_mode: "Protocol Mode", lbl_max_configs: "Max Configs",
                     desc_assigned_nodes: "Custom Nodes (comma/newline, empty = all nodes)",
                     desc_nat64_user: "Optional. Converts IPv4 Proxy IPs to NAT64 IPv6 addresses.",
@@ -1980,7 +1980,7 @@ proxyip.cmliussss.net" class="w-full px-4 py-3 rounded-xl border border-slate-20
                     lbl_user_panel_url: "آدرس پنل اصلی (نودهای سفارشی)", desc_user_panel_url: "دامنه پنل اصلی برای نودهای سفارشی. اگر خالی باشد، آدرس پنل پیش‌فرض استفاده می‌شود.",
                   metrics_live: "وضعیت زنده مصرف اتصالات و پردازش", no_metrics: "هنوز داده‌ای از تراکنش و اتصالات فعال ثبت نشده است.", run_diagnostics: "⚡ اجرای عیب‌یابی شبکه",
                   target_node: "هدف گره شبکه", response: "مدت زمان تاخیر پاسخگویی", status: "وضعیت گره", local_port: "درگاه محلی",
-                  lbl_doh: "تحلیل‌گر تخصصی آدرس‌یابی عددی", lbl_strategy: "روش نام‌گذاری کانفیگ‌ها", lbl_prefix: "پیشوند نام کانفیگ‌ها", desc_prefix_note: "این پیشوند در هر جایی از طرح نام‌گذاری که متغیر <code class='bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono'>{PREFIX}</code> قرار داشته باشد جایگزین می‌شود.",
+                  lbl_doh: "تحلیل‌گر تخصصی آدرس‌یابی عددی", lbl_strategy: "روش نام‌گذاری کانفیگ‌ها", lbl_prefix: "پیشوند نام کانفیگ‌ها", html_desc_prefix_note: "این پیشوند در هر جایی از طرح نام‌گذاری که متغیر <code class='bg-slate-100 dark:bg-slate-800/80 px-1 py-0.5 rounded text-rose-500 font-mono'>{PREFIX}</code> قرار داشته باشد جایگزین می‌شود.",
                     
                   slave_title: "سایر نودهای موازی", slave_desc: "آدرس دامنه سایر ورکرها را وارد نمایید (هر خط یک آدرس). نود اصلی تنظیمات و مشترکین را به صورت خودکار با آن‌ها هماهنگ می‌کند!",
                   force_sync: "همگام‌سازی اجباری نودها", limit_total: "محدودیت تعداد کل درخواست‌ها (GB)  (برای نامحدود خالی بگذارید)", limit_daily: "محدودیت درخواست‌های روزانه (GB)  (برای نامحدود خالی بگذارید)",
@@ -3187,6 +3187,7 @@ proxyip.cmliussss.net" class="w-full px-4 py-3 rounded-xl border border-slate-20
                           delete slaveCfg.tgToken; delete slaveCfg.tgChatId; delete slaveCfg.tgAdminId; delete slaveCfg.tgBotLang;
                           delete slaveCfg.cfAccountId; delete slaveCfg.cfApiToken; delete slaveCfg.cfWorkerName;
                           delete slaveCfg.panelApiKeys; delete slaveCfg.linkedPanels; delete slaveCfg.slaveNodes; delete slaveCfg.syncApiKey;
+                          delete slaveCfg.masterKey; delete slaveCfg.apiRoute; delete slaveCfg.deviceId; delete slaveCfg.hubPanelUrl; delete slaveCfg.githubRepo; delete slaveCfg.customPanelUrl;
                           const synced = new Set();
                           window.nahanConfig.linkedPanels.forEach(p => {
                               if (!p || !p.url || !p.apiKey) return;
