@@ -1,262 +1,76 @@
 {
-    "log": {
-        "disabled": false,
-        "level": "warn",
-        "timestamp": true
-    },
-    "dns": {
-        "servers": [
-            {
-                "type": "https",
-                "tag": "dns-remote",
-                "server": "8.8.8.8",
-                "detour": "{{SELECTOR_TAG}}"
-            },
-            {
-                "type": "udp",
-                "tag": "dns-direct",
-                "server": "8.8.8.8"
-            },
-            {
-                "type": "https",
-                "tag": "dns-block",
-                "server": "8.8.8.8"
-            }
-        ],
-        "rules": [
-            {
-                "outbound": "any",
-                "server": "dns-block",
-                "disable_cache": true
-            },
-            {
-                "clash_mode": "Direct",
-                "server": "dns-direct"
-            },
-            {
-                "clash_mode": "Global",
-                "server": "dns-remote"
-            },
-            {
-                "rule_set": [
-                    "geosite-category-ads-all"
-                ],
-                "action": "reject"
-            },
-            {
-                "rule_set": [
-                    "geosite-category-ads-ir"
-                ],
-                "action": "reject"
-            },
-            {
-                "type": "logical",
-                "mode": "and",
-                "rules": [
-                    {
-                        "rule_set": [
-                            "geosite-ir"
-                        ]
-                    },
-                    {
-                        "rule_set": "geoip-ir"
-                    }
-                ],
-                "action": "route",
-                "server": "dns-direct"
-            },
-            {
-                "domain_suffix": [
-                    "{{SERVER_ADDRESS}}"
-                ],
-                "server": "dns-direct"
-            }
-        ],
-        "final": "dns-remote",
-        "strategy": "prefer_ipv4",
-        "cache_capacity": 4096,
-        "optimistic": true,
-        "timeout": "10s",
-        "reverse_mapping": true
-    },
-    "inbounds": [
-        {
-            "type": "tun",
-            "tag": "tun-in",
-            "address": [
-                "172.19.0.1/28"
-            ],
-            "mtu": 9000,
-            "dns_mode": "hijack",
-            "dns_address": [
-                "172.19.0.2"
-            ],
-            "auto_route": true,
-            "strict_route": true,
-            "stack": "mixed"
-        },
-        {
-            "type": "mixed",
-            "tag": "mixed-in",
-            "listen": "127.0.0.1",
-            "listen_port": 2334
-        },
-        {
-            "type": "socks",
-            "tag": "socks-in",
-            "listen": "127.0.0.1",
-            "listen_port": 2333
-        },
-        {
-            "type": "direct",
-            "tag": "dns-in",
-            "listen": "127.0.0.1",
-            "listen_port": 6453,
-            "override_address": "1.1.1.1",
-            "override_port": 53
-        }
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "google",
+        "address": "tls://8.8.8.8",
+        "detour": "select"
+      },
+      {
+        "tag": "local",
+        "address": "223.5.5.5",
+        "detour": "direct"
+      }
     ],
-    "outbounds": [
-        {
-            "type": "selector",
-            "tag": "{{SELECTOR_TAG}}",
-            "outbounds": [
-                "Best Ping 🚀",
-                "{{PROXY_TAGS}}"
-            ],
-            "interrupt_exist_connections": false
-        },
-        {
-            "type": "urltest",
-            "tag": "Best Ping 🚀",
-            "outbounds": [
-                "{{PROXY_TAGS}}"
-            ],
-            "url": "https://www.gstatic.com/generate_204",
-            "interval": "30s",
-            "interrupt_exist_connections": false
-        },
-        {
-            "type": "direct",
-            "tag": "direct",
-            "domain_resolver": "dns-direct"
-        },
-        {
-            "type": "block",
-            "tag": "block"
-        },
-        {
-            "type": "direct",
-            "tag": "{{OUTBOUND_NODES}}"
-        }
-    ],
-    "route": {
-        "rules": [
-            {
-                "protocol": "dns",
-                "action": "hijack-dns"
-            },
-            {
-                "clash_mode": "Direct",
-                "outbound": "direct"
-            },
-            {
-                "clash_mode": "Global",
-                "outbound": "{{SELECTOR_TAG}}"
-            },
-            {
-                "ip_cidr": "172.19.0.2",
-                "action": "hijack-dns"
-            },
-            {
-                "rule_set": [
-                    "geosite-category-ads-all"
-                ],
-                "outbound": "block"
-            },
-            {
-                "rule_set": [
-                    "geosite-category-ads-ir"
-                ],
-                "outbound": "block"
-            },
-            {
-                "type": "logical",
-                "mode": "and",
-                "rules": [
-                    {
-                        "rule_set": [
-                            "geosite-ir"
-                        ]
-                    },
-                    {
-                        "rule_set": "geoip-ir"
-                    }
-                ],
-                "outbound": "direct"
-            },
-            {
-                "ip_is_private": true,
-                "outbound": "direct"
-            },
-            {
-                "network": "udp",
-                "action": "reject"
-            }
+    "rules": [
+      {
+        "outbound": [
+          "any"
         ],
-        "auto_detect_interface": true,
-        "default_domain_resolver": "dns-direct",
-        "final": "{{SELECTOR_TAG}}",
-        "rule_set": [
-            {
-                "tag": "geosite-ir",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-ir.srs",
-                "download_detour": "direct"
-            },
-            {
-                "tag": "geosite-category-ads-all",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-category-ads-all.srs",
-                "download_detour": "direct"
-            },
-            {
-                "tag": "geosite-category-ads-ir",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-category-ads-ir.srs",
-                "download_detour": "direct"
-            },
-            {
-                "tag": "geoip-ir",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-ir.srs",
-                "download_detour": "direct"
-            }
-        ]
-    },
-    "ntp": {
-        "enabled": true,
-        "server": "time.cloudflare.com",
-        "server_port": 123,
-        "domain_resolver": "dns-direct",
-        "interval": "30m",
-        "write_to_system": false
-    },
-    "experimental": {
-        "cache_file": {
-            "enabled": true,
-            "store_fakeip": true
-        },
-        "clash_api": {
-            "external_controller": "127.0.0.1:9090",
-            "external_ui": "ui",
-            "default_mode": "Rule",
-            "external_ui_download_url": "https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip",
-            "external_ui_download_detour": "direct"
-        }
+        "server": "local"
+      }
+    ],
+    "final": "google",
+    "strategy": "prefer_ipv4",
+    "optimistic": true,
+    "reverse_mapping": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080,
+      "set_system_proxy": false
     }
+  ],
+  "outbounds": [
+    "__OUTBOUNDS__"
+  ],
+  "route": {
+    "rules": [
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "action": "route",
+        "outbound": "select"
+      }
+    ],
+    "final": "select",
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "path": "cache.db",
+      "store_dns": true
+    },
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "access_control_allow_origin": [
+        "*"
+      ],
+      "access_control_allow_private_network": true
+    }
+  }
 }
